@@ -1,0 +1,100 @@
+{
+  "status": "SEED_VERIFIED",
+  "reviewedBy": null,
+  "reviewedOn": null,
+  "note": "Numbers are seed data supplied in the project brief. Do NOT add, substitute, reformat or 'improve' any number. Anything added later must be re-verified against the operator's own published listing and given a lastVerified date.",
+  "todo": "Proof-of-concept only. Re-confirm every number and every set of operating hours with the operating organisation before this is placed in front of a real user.",
+  "resources": [
+    {
+      "id": "sos-voice",
+      "name": "SOS (Samaritans of Singapore)",
+      "number": "1767",
+      "channel": "voice",
+      "blurb": "24-hour emotional support for anyone in distress.",
+      "hours": { "kind": "always" },
+      "lastVerified": "2026-09-19"
+    },
+    {
+      "id": "sos-caretext",
+      "name": "SOS CareText",
+      "number": "9151 1767",
+      "channel": "whatsapp",
+      "blurb": "Text instead of talking. Useful when you can't be overheard.",
+      "hours": { "kind": "always" },
+      "lastVerified": "2026-09-19"
+    },
+    {
+      "id": "emergency-995",
+      "name": "Emergency Ambulance / Police",
+      "number": "995",
+      "channel": "voice",
+      "blurb": "Someone is unconscious, not breathing, fitting, or in immediate danger.",
+      "hours": { "kind": "always" },
+      "lastVerified": "2026-09-19"
+    },
+    {
+      "id": "national-mindline",
+      "name": "National Mindline",
+      "number": "1771",
+      "channel": "voice",
+      "blurb": "National mental health support line.",
+      "hours": { "kind": "always" },
+      "lastVerified": "2026-09-19"
+    },
+    {
+      "id": "imh-helpline",
+      "name": "IMH Mental Health Helpline",
+      "number": "6389 2000",
+      "channel": "voice",
+      "blurb": "Institute of Mental Health's round-the-clock helpline.",
+      "hours": { "kind": "always" },
+      "lastVerified": "2026-09-19"
+    },
+    {
+      "id": "nams-addictions",
+      "name": "NAMS Addictions Helpline",
+      "number": "1800 2255 227",
+      "channel": "voice",
+      "blurb": "National Addictions Management Service.",
+      "hours": { "kind": "weekly", "days": [1, 2, 3, 4, 5], "open": "09:00", "close": "18:00" },
+      "lastVerified": "2026-09-19"
+    },
+    {
+      "id": "wecare-voice",
+      "name": "WE CARE Community Services",
+      "number": "3165 8017",
+      "channel": "voice",
+      "blurb": "Addiction recovery support and counselling.",
+      "hours": { "kind": "weekly", "days": [1, 2, 3, 4, 5], "open": "10:00", "close": "18:00" },
+      "lastVerified": "2026-09-19"
+    },
+    {
+      "id": "wecare-whatsapp",
+      "name": "WE CARE (WhatsApp)",
+      "number": "8391 3023",
+      "channel": "whatsapp",
+      "blurb": "Same service, over text.",
+      "hours": { "kind": "weekly", "days": [1, 2, 3, 4, 5], "open": "10:00", "close": "18:00" },
+      "lastVerified": "2026-09-19"
+    },
+    {
+      "id": "sana-helpline",
+      "name": "SANA Helpline",
+      "number": "1800 733 4444",
+      "channel": "voice",
+      "blurb": "Singapore Anti-Narcotics Association.",
+      "hours": null,
+      "lastVerified": null,
+      "note": "Confirm with SANA before release"
+    },
+    {
+      "id": "na-singapore",
+      "name": "Narcotics Anonymous Singapore",
+      "number": "8405 8432",
+      "channel": "voice",
+      "blurb": "Peer fellowship. A person answers, not a service desk.",
+      "hours": null,
+      "lastVerified": null
+    }
+  ]
+}

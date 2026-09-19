@@ -1,0 +1,32 @@
+{
+  "status": "UNREVIEWED_PLACEHOLDER",
+  "reviewedBy": null,
+  "reviewedOn": null,
+  "todo": "Phase timings for both patterns need clinical review. Breath-holds are genuinely unpleasant for some anxious users, which is why the sigh is offered as an equal alternative rather than a fallback.",
+  "patterns": [
+    {
+      "id": "box",
+      "name": "Box breathing",
+      "summary": "Four in, four hold, four out, four hold.",
+      "detail": "Steady and symmetrical. Good when you want something to count.",
+      "phases": [
+        { "label": "Breathe in", "seconds": 4, "grow": true },
+        { "label": "Hold", "seconds": 4, "grow": true },
+        { "label": "Breathe out", "seconds": 4, "grow": false },
+        { "label": "Hold", "seconds": 4, "grow": false }
+      ]
+    },
+    {
+      "id": "sigh",
+      "name": "Physiological sigh",
+      "summary": "Two breaths in, one long breath out.",
+      "detail": "No holding at any point. Pick this one if holding your breath makes things worse, which for a lot of people it does.",
+      "phases": [
+        { "label": "Breathe in", "seconds": 3, "grow": true },
+        { "label": "Top it up", "seconds": 1, "grow": true },
+        { "label": "Long breath out", "seconds": 6, "grow": false }
+      ]
+    }
+  ],
+  "defaultPrompt": "Which one should this app open with?"
+}

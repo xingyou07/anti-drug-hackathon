@@ -1,0 +1,19 @@
+{
+  "status": "UNREVIEWED_PLACEHOLDER",
+  "reviewedBy": null,
+  "reviewedOn": null,
+  "todo": "Standard 5-4-3-2-1 sensory grounding. Wording needs clinical review before real use.",
+  "title": "5-4-3-2-1",
+  "lede": "Five senses, counting down. It works by giving your attention somewhere duller to be.",
+  "steps": [
+    { "count": 5, "sense": "things you can see", "hint": "Ordinary things. A door handle counts." },
+    { "count": 4, "sense": "things you can feel", "hint": "The floor, your sleeve, the chair, the air." },
+    { "count": 3, "sense": "things you can hear", "hint": "Two near, one far away." },
+    { "count": 2, "sense": "things you can smell", "hint": "Or two smells you'd know anywhere." },
+    { "count": 1, "sense": "thing you can taste", "hint": "Or one slow breath instead. Either is fine." }
+  ],
+  "completion": {
+    "title": "That's the whole thing",
+    "body": "You can run it again from the top as many times as you want. Nothing here is counting."
+  }
+}
