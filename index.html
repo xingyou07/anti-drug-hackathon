@@ -4,105 +4,129 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Steady — support without the lecture</title>
+
+<!-- Tailwind (play CDN) + Motion (vanilla sibling of Framer Motion). Both load from CDNs, so the first open needs internet. -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/motion@11.18.2/dist/motion.js"></script>
+<script>
+  // shadcn-style design tokens, mapped to CSS variables so light/dark switch automatically.
+  tailwind.config = {
+    theme: { extend: {
+      colors: {
+        background: 'var(--background)', foreground: 'var(--foreground)', card: 'var(--card)',
+        border: 'var(--border)', ring: 'var(--ring)',
+        muted: { DEFAULT: 'var(--muted)', foreground: 'var(--muted-foreground)' },
+        primary: { DEFAULT: 'var(--primary)', foreground: 'var(--primary-foreground)' },
+        secondary: 'var(--secondary)',
+        destructive: { DEFAULT: 'var(--destructive)', soft: 'var(--destructive-soft)' },
+        success: { DEFAULT: 'var(--success)', soft: 'var(--success-soft)' },
+        warning: { DEFAULT: 'var(--warning)', soft: 'var(--warning-soft)', ink: 'var(--warning-ink)' }
+      },
+      keyframes: { breathe: { '0%': { transform: 'scale(.6)' }, '40%': { transform: 'scale(1.15)' }, '100%': { transform: 'scale(.6)' } } },
+      animation: { breathe: 'breathe 10s ease-in-out infinite' }
+    } }
+  };
+</script>
 <style>
   :root {
-    --bg: #f6f4ef; --card: #ffffff; --ink: #1f2a37; --muted: #5b6675; --line: #e6e2d8;
-    --primary: #0f766e; --primary-ink: #ffffff; --soft: #d9f0ec; --warm: #f59e0b; --warm-soft: #fdf0d2;
-    --bad: #b91c1c; --bad-soft: #fbe4e4; --good: #166534; --good-soft: #dcf5e4;
-    --radius: 18px; --shadow: 0 2px 10px rgba(31,42,55,.07);
+    --background: #f6f4ef; --foreground: #1f2a37; --card: #ffffff; --border: #e6e2d8; --ring: #0f766e;
+    --muted: #efece4; --muted-foreground: #5b6675;
+    --primary: #0f766e; --primary-foreground: #ffffff; --secondary: #d9f0ec;
+    --destructive: #b91c1c; --destructive-soft: #fbe4e4;
+    --success: #166534; --success-soft: #dcf5e4;
+    --warning: #f59e0b; --warning-soft: #fdf0d2; --warning-ink: #92400e;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #0f1720; --card: #182230; --ink: #eaf0f6; --muted: #9db0c3; --line: #263547;
-      --primary: #2dd4bf; --primary-ink: #04201c; --soft: #12332f; --warm: #fbbf24; --warm-soft: #3a2f10;
-      --bad: #f87171; --bad-soft: #3b1a1a; --good: #4ade80; --good-soft: #12301d; --shadow: none;
+      --background: #0f1720; --foreground: #eaf0f6; --card: #182230; --border: #263547; --ring: #2dd4bf;
+      --muted: #1d2b3b; --muted-foreground: #9db0c3;
+      --primary: #2dd4bf; --primary-foreground: #04201c; --secondary: #12332f;
+      --destructive: #f87171; --destructive-soft: #3b1a1a;
+      --success: #4ade80; --success-soft: #12301d;
+      --warning: #fbbf24; --warning-soft: #3a2f10; --warning-ink: #fbbf24;
     }
   }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; }
-  body { background: var(--bg); color: var(--ink); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  #shell { max-width: 640px; margin: 0 auto; min-height: 100vh; padding: 0 16px 96px; }
-  header { display: flex; align-items: center; gap: 10px; padding: 18px 0 8px; }
-  .logo { width: 34px; height: 34px; border-radius: 11px; background: var(--primary); color: var(--primary-ink); display: grid; place-items: center; font-weight: 800; }
-  header b { font-size: 20px; letter-spacing: .2px; }
-  header span { color: var(--muted); font-size: 13px; margin-left: auto; }
-  h1 { font-size: 28px; line-height: 1.2; margin: 14px 0 6px; }
-  h2 { font-size: 20px; margin: 18px 0 8px; }
-  p { margin: 8px 0; }
-  .muted { color: var(--muted); }
-  .small { font-size: 13px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; margin: 12px 0; box-shadow: var(--shadow); }
-  .card.tap { cursor: pointer; display: flex; gap: 14px; align-items: center; text-align: left; width: 100%; color: inherit; font: inherit; }
-  .card.tap:hover { border-color: var(--primary); }
-  .card .ic { font-size: 30px; flex: none; }
-  .card h3 { margin: 0 0 2px; font-size: 18px; }
-  .hero { background: linear-gradient(135deg, var(--soft), var(--warm-soft)); border: 0; }
-  .btn { appearance: none; border: 0; background: var(--primary); color: var(--primary-ink); font: inherit; font-weight: 650; padding: 13px 18px; border-radius: 14px; cursor: pointer; width: 100%; margin-top: 10px; text-align: center; text-decoration: none; display: block; }
-  .btn:hover { filter: brightness(1.06); }
-  .btn.ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
-  .btn.ghost:hover { border-color: var(--primary); }
-  .btn.big { padding: 22px; font-size: 20px; border-radius: 20px; }
-  .btn.danger { background: var(--bad); color: #fff; }
-  .btn.inline { display: inline-block; width: auto; }
-  .choice { text-align: left; }
-  .back { background: none; border: 0; color: var(--primary); font: inherit; font-weight: 600; cursor: pointer; padding: 6px 0; }
-  .tag { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: var(--soft); color: var(--primary); }
-  .tag.good { background: var(--good-soft); color: var(--good); }
-  .tag.hard { background: var(--bad-soft); color: var(--bad); }
-  .tag.okay { background: var(--warm-soft); color: var(--warm); }
-  .story { font-size: 18px; line-height: 1.6; }
-  .note { border-left: 4px solid var(--primary); padding: 10px 14px; background: var(--soft); border-radius: 10px; margin: 12px 0; }
-  .bubble { background: var(--warm-soft); padding: 12px 14px; border-radius: 16px 16px 16px 4px; margin: 10px 0; max-width: 90%; }
-  .bubble.me { background: var(--soft); margin-left: auto; border-radius: 16px 16px 4px 16px; }
-  textarea, input { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1.5px solid var(--line); border-radius: 12px; padding: 11px 12px; margin-top: 6px; }
-  textarea:focus, input:focus { outline: 2px solid var(--primary); border-color: transparent; }
-  label { font-weight: 600; font-size: 14px; display: block; margin-top: 12px; }
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
-  .chip { border: 1.5px solid var(--line); background: var(--card); color: var(--ink); border-radius: 99px; padding: 7px 14px; font: inherit; font-size: 14px; cursor: pointer; }
-  .chip.on { border-color: var(--primary); background: var(--soft); }
-  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .stat { background: var(--soft); border-radius: 16px; padding: 14px; text-align: center; }
-  .stat b { display: block; font-size: 32px; line-height: 1.1; }
-  .stat span { font-size: 13px; color: var(--muted); }
-  .miles { display: flex; flex-wrap: wrap; gap: 8px; }
-  .mile { padding: 8px 12px; border-radius: 12px; border: 1.5px dashed var(--line); font-size: 13px; color: var(--muted); }
-  .mile.got { border: 1.5px solid var(--primary); background: var(--soft); color: var(--ink); font-weight: 650; }
-  .dots { display: flex; gap: 6px; margin: 4px 0 10px; }
-  .dots i { flex: 1; height: 6px; border-radius: 4px; background: var(--line); }
-  .dots i.on { background: var(--primary); }
-  .breath { width: 150px; height: 150px; margin: 22px auto; border-radius: 50%; background: radial-gradient(circle, var(--primary), var(--soft)); animation: breathe 10s ease-in-out infinite; opacity: .9; }
-  @keyframes breathe { 0% { transform: scale(.6); } 40% { transform: scale(1.15); } 100% { transform: scale(.6); } }
-  .center { text-align: center; }
-  .clock { font-variant-numeric: tabular-nums; font-size: 34px; font-weight: 800; }
-  .arena { position: relative; height: 220px; background: var(--bg); border: 1.5px solid var(--line); border-radius: 16px; overflow: hidden; touch-action: manipulation; }
-  .dot { position: absolute; width: 54px; height: 54px; border-radius: 50%; background: var(--warm); border: 0; cursor: pointer; box-shadow: 0 0 0 6px var(--warm-soft); }
-  .hot { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
-  .hot:last-child { border: 0; }
-  .hot a { color: var(--primary); font-weight: 700; text-decoration: none; white-space: nowrap; }
-  nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0); }
-  nav div { max-width: 640px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); }
-  nav button { background: none; border: 0; padding: 10px 4px 9px; color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; }
-  nav button span { display: block; font-size: 22px; line-height: 1.2; }
-  nav button.on { color: var(--primary); font-weight: 700; }
-  footer { color: var(--muted); font-size: 12px; text-align: center; margin: 24px 0 0; }
+  /* paints correctly even before the Tailwind script finishes loading */
+  body { margin: 0; background: var(--background); color: var(--foreground); }
+  /* Tailwind's preflight zeroes paragraph margins */
+  #app p { margin: .5rem 0; }
 </style>
 </head>
-<body>
-<div id="shell">
-  <header><div class="logo">S</div><b>Steady</b><span>no lectures. just support.</span></header>
+<body class="bg-background font-sans text-base leading-normal text-foreground antialiased">
+<div id="shell" class="mx-auto min-h-screen max-w-xl px-4 pb-28">
+  <header class="flex items-center gap-2.5 pb-2 pt-5">
+    <div class="grid size-9 place-items-center rounded-xl bg-primary font-extrabold text-primary-foreground">S</div>
+    <b class="text-xl tracking-wide">Steady</b>
+    <span class="ml-auto text-xs text-muted-foreground">no lectures. just support.</span>
+  </header>
   <main id="app"></main>
-  <footer>Educational only — not medical advice. Everything you type stays on your device.</footer>
+  <footer class="mt-6 text-center text-xs text-muted-foreground">Educational only — not medical advice. Everything you type stays on your device.</footer>
 </div>
-<nav><div id="nav"></div></nav>
+<nav class="fixed inset-x-0 bottom-0 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]">
+  <div id="nav" class="mx-auto grid max-w-xl grid-cols-4"></div>
+</nav>
 
 <script>
 /* ---------- helpers ---------- */
 const $ = (s, el = document) => el.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const cn = (...c) => c.filter(Boolean).join(' ');
 const store = {
   get(k, d) { try { const v = localStorage.getItem('steady:' + k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem('steady:' + k, JSON.stringify(v)); } catch {} }
 };
+
+/* ---------- UI kit (shadcn-style components as plain functions) ---------- */
+const attrs = o => [o.go && `data-go="${o.go}"`, o.act && `data-act="${o.act}"`, o.arg !== undefined && `data-arg="${esc(o.arg)}"`, o.href && `href="${o.href}"`, o.id && `id="${o.id}"`, o.aria && `aria-label="${o.aria}"`, o.style && `style="${o.style}"`].filter(Boolean).join(' ');
+
+const BTN_BASE = 'mt-2.5 inline-flex w-full items-center gap-2 rounded-xl px-5 py-3 text-base font-semibold no-underline transition active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+const BTN_VARIANT = {
+  default: 'bg-primary text-primary-foreground hover:brightness-110',
+  outline: 'border-2 border-border bg-transparent text-foreground hover:border-primary',
+  ghost: 'bg-transparent text-primary hover:bg-secondary',
+  destructive: 'bg-destructive text-white hover:brightness-110'
+};
+const BTN_SIZE = { md: '', lg: 'rounded-3xl py-6 text-xl' };
+function Button(label, o = {}) {
+  const tag = o.href ? 'a' : 'button';
+  return `<${tag} class="${cn(BTN_BASE, BTN_VARIANT[o.variant || 'default'], BTN_SIZE[o.size || 'md'], o.align === 'start' ? 'justify-start text-left' : 'justify-center', o.cls)}" ${attrs(o)}>${label}</${tag}>`;
+}
+const BackLink = (to, label = '← Back') => `<button class="-ml-1 inline-flex px-1 py-1.5 font-semibold text-primary" data-go="${to}">${label}</button>`;
+
+const Card = (inner, o = {}) => `<div class="${cn('my-3 rounded-2xl border border-border bg-card p-5 text-card-foreground shadow-sm', o.cls)}" ${o.fx ? 'data-fx' : ''}>${inner}</div>`;
+const TapCard = (icon, title, sub, o) => `<button class="my-3 flex w-full items-center gap-3.5 rounded-2xl border border-border bg-card p-5 text-left shadow-sm transition hover:border-primary active:scale-[.99]" ${attrs(o)}>
+  <div class="flex-none text-3xl">${icon}</div><div><h3 class="text-lg font-bold leading-snug">${title}</h3><span class="text-muted-foreground">${sub}</span></div></button>`;
+
+const BADGE = { default: 'bg-secondary text-primary', good: 'bg-success-soft text-success', hard: 'bg-destructive-soft text-destructive', okay: 'bg-warning-soft text-warning-ink' };
+const Badge = (text, v = 'default') => `<span class="inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${BADGE[v]}">${text}</span>`;
+const Note = (html, cls = '') => `<div class="${cn('my-3 rounded-xl border-l-4 border-primary bg-secondary px-3.5 py-2.5', cls)}">${html}</div>`;
+const Steps = (total, active) => `<div class="my-1 mb-3 flex gap-1.5">${Array.from({ length: total }, (_, i) => `<i class="h-1.5 flex-1 rounded transition-colors ${i <= active ? 'bg-primary' : 'bg-border'}"></i>`).join('')}</div>`;
+const H1 = t => `<h1 class="mb-1.5 mt-3.5 text-3xl font-extrabold leading-tight">${t}</h1>`;
+const H2 = (t, cls = '') => `<h2 class="${cn('mb-2 mt-1 text-xl font-bold', cls)}">${t}</h2>`;
+const Muted = (t, cls = '') => `<p class="${cn('text-muted-foreground', cls)}">${t}</p>`;
+const FIELD = 'mt-1.5 w-full rounded-xl border-2 border-border bg-background px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-ring';
+const Label = (id, t) => `<label for="${id}" class="mt-3 block text-sm font-semibold">${t}</label>`;
+const Input = (id, label, o = '') => `${Label(id, label)}<input id="${id}" class="${FIELD}" ${o}>`;
+const Textarea = (id, label, value, o = '') => `${Label(id, label)}<textarea id="${id}" class="${FIELD}" ${o}>${value}</textarea>`;
+
+/* ---------- motion (no-ops if the CDN fails or the user prefers reduced motion) ---------- */
+const M = window.Motion;
+const REDUCE = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+function run(fn) { if (M && !REDUCE) { try { fn(M); } catch {} } }
+
+function enter(full) {
+  run(m => {
+    const targets = full ? '#app > *' : '#app [data-fx]';
+    if ($(targets)) m.animate(targets, { opacity: [0, 1], y: [full ? 14 : 8, 0] }, { duration: full ? .4 : .3, delay: m.stagger(full ? .06 : .05), ease: 'easeOut' });
+    if ($('[data-star]')) m.animate('[data-star]', { scale: [.2, 1.3, 1] }, { duration: .4, delay: m.stagger(.12) });
+    if ($('.mile-got')) m.animate('.mile-got', { scale: [.85, 1] }, { duration: .3, delay: m.stagger(.05) });
+    if ($('#wave')) m.animate('#wave', { y: [0, -14, 0] }, { duration: .6, repeat: 2 });
+    document.querySelectorAll('[data-count]').forEach(el => {
+      const n = +el.dataset.count, p = el.dataset.prefix || '';
+      m.animate(0, n, { duration: .9, ease: 'easeOut', onUpdate: v => { el.textContent = p + Math.round(v); } });
+    });
+  });
+}
 
 /* ---------- content: story ---------- */
 const STORY = {
@@ -187,16 +211,18 @@ function go(tab, sub = null) {
   if (sub === 'practice') S.practice = { scene: null, round: 0, stars: 0, fb: null };
   if (sub === 'facts') S.facts = { i: 0, score: 0, ans: null };
   if (sub === 'rescue') S.rescue = { step: 0, t0: Date.now(), score: 0, done: false };
-  render();
+  render(true);
   window.scrollTo(0, 0);
 }
 
-function render() {
+// full = a screen change (animate everything); otherwise only [data-fx] parts animate
+function render(full = false) {
   clearInterval(ticker); ticker = null;
-  $('#nav').innerHTML = TABS.map(([id, ic, lb]) => `<button class="${S.tab === id ? 'on' : ''}" data-go="${id}"><span>${ic}</span>${lb}</button>`).join('');
+  $('#nav').innerHTML = TABS.map(([id, ic, lb]) => `<button class="px-1 pb-2 pt-2.5 text-xs ${S.tab === id ? 'font-bold text-primary' : 'text-muted-foreground'}" data-go="${id}"><span class="block text-2xl leading-tight">${ic}</span>${lb}</button>`).join('');
   const views = { home: vHome, prevent: vPrevent, recover: vRecover, help: vHelp };
   $('#app').innerHTML = views[S.tab]();
   if (S.tab === 'recover' && S.sub === 'rescue' && !S.rescue.done) { ticker = setInterval(tick, 250); tick(); }
+  enter(full);
 }
 
 document.addEventListener('click', e => {
@@ -206,96 +232,92 @@ document.addEventListener('click', e => {
   if (a && ACTIONS[a.dataset.act]) ACTIONS[a.dataset.act](a.dataset.arg, a);
 });
 
-const back = (to, label = '← Back') => `<button class="back" data-go="${to}">${label}</button>`;
-
 /* ---------- views ---------- */
 function vHome() {
   const t = store.get('tracker'), days = t ? daysSince(t.start) : null;
   return `
-  <div class="card hero">
-    <h1>Real talk. No lectures.</h1>
+  <div class="my-3 rounded-2xl bg-gradient-to-br from-secondary to-warning-soft p-5">
+    <h1 class="mb-1.5 text-3xl font-extrabold leading-tight">Real talk. No lectures.</h1>
     <p>Whether you're a teen trying to handle a tough moment, or someone fighting to stay clean, Steady meets you where you are.</p>
   </div>
-  <button class="card tap" data-go="prevent"><div class="ic">🧭</div><div><h3>Prevent</h3><span class="muted">Play through a party, practice saying no, bust myths.</span></div></button>
-  <button class="card tap" data-go="recover"><div class="ic">🌱</div><div><h3>Recover</h3><span class="muted">${days === null ? 'A craving rescue button and a streak tracker.' : `Day ${days} and counting. Craving rescue and your tracker.`}</span></div></button>
-  <button class="card tap" data-go="help"><div class="ic">📞</div><div><h3>Get help now</h3><span class="muted">Free, confidential hotlines. Including “I'm not ready to quit.”</span></div></button>`;
+  ${TapCard('🧭', 'Prevent', 'Play through a party, practice saying no, bust myths.', { go: 'prevent' })}
+  ${TapCard('🌱', 'Recover', days === null ? 'A craving rescue button and a streak tracker.' : `Day ${days} and counting. Craving rescue and your tracker.`, { go: 'recover' })}
+  ${TapCard('📞', 'Get help now', 'Free, confidential hotlines. Including “I\'m not ready to quit.”', { go: 'help' })}`;
 }
 
 function vPrevent() {
   if (S.sub === 'story') return vStory();
   if (S.sub === 'practice') return vPractice();
   if (S.sub === 'facts') return vFacts();
-  return `
-  <h1>Prevent</h1><p class="muted">Practice the moment before it happens.</p>
-  <button class="card tap" data-go="prevent:story"><div class="ic">🎭</div><div><h3>The Party</h3><span class="muted">A choose-your-path story. Your choices have consequences.</span></div></button>
-  <button class="card tap" data-go="prevent:practice"><div class="ic">💬</div><div><h3>Say No Practice</h3><span class="muted">A pushy friend. Your words. Instant coaching.</span></div></button>
-  <button class="card tap" data-go="prevent:facts"><div class="ic">🧠</div><div><h3>Myth or Fact?</h3><span class="muted">Seven quick ones. Some will surprise you.</span></div></button>`;
+  return `${H1('Prevent')}${Muted('Practice the moment before it happens.')}
+  ${TapCard('🎭', 'The Party', 'A choose-your-path story. Your choices have consequences.', { go: 'prevent:story' })}
+  ${TapCard('💬', 'Say No Practice', 'A pushy friend. Your words. Instant coaching.', { go: 'prevent:practice' })}
+  ${TapCard('🧠', 'Myth or Fact?', 'Seven quick ones. Some will surprise you.', { go: 'prevent:facts' })}`;
 }
 
 function vStory() {
   const n = STORY[S.story.node];
   if (n.end) {
-    return `${back('prevent', '← Menu')}
-    <div class="card"><span class="tag ${n.end}">${{ good: 'Strong move', okay: 'Course-corrected', hard: 'Hard lesson' }[n.end]}</span>
-      <h2>${n.title}</h2><p class="story">${n.text}</p>
-      <div class="note"><b>Reality check:</b> ${n.lesson}</div>
-      <button class="btn" data-act="story-restart">Play again, choose differently</button>
-      <button class="btn ghost" data-go="prevent:practice">Practice saying it for real</button></div>`;
+    return `${BackLink('prevent', '← Menu')}
+    ${Card(`${Badge({ good: 'Strong move', okay: 'Course-corrected', hard: 'Hard lesson' }[n.end], n.end)}
+      ${H2(n.title, 'mt-2')}<p class="text-lg leading-relaxed">${n.text}</p>
+      ${Note(`<b>Reality check:</b> ${n.lesson}`)}
+      ${Button('Play again, choose differently', { act: 'story-restart' })}
+      ${Button('Practice saying it for real', { go: 'prevent:practice', variant: 'outline' })}`, { fx: true })}`;
   }
-  return `${back('prevent', '← Menu')}
-    <div class="card"><span class="tag">The Party</span><p class="story">${n.text}</p></div>
-    ${n.choices.map(([l, to]) => `<button class="btn ghost choice" data-act="story-go" data-arg="${to}">${l}</button>`).join('')}`;
+  return `${BackLink('prevent', '← Menu')}
+    ${Card(`${Badge('The Party')}<p class="text-lg leading-relaxed">${n.text}</p>`, { fx: true })}
+    <div data-fx>${n.choices.map(([l, to]) => Button(l, { act: 'story-go', arg: to, variant: 'outline', align: 'start' })).join('')}</div>`;
 }
 
 function vPractice() {
   const p = S.practice;
   if (!p.scene) {
-    return `${back('prevent', '← Menu')}<h1>Say No Practice</h1><p class="muted">Pick a situation. I'll play the pushy friend. Answer the way you'd really say it.</p>
-    ${Object.entries(SCENES).map(([k, s]) => `<button class="card tap" data-act="p-scene" data-arg="${k}"><div class="ic">${s.icon}</div><div><h3>${s.label}</h3><span class="muted">${esc(s.lines[0])}</span></div></button>`).join('')}`;
+    return `${BackLink('prevent', '← Menu')}${H1('Say No Practice')}${Muted("Pick a situation. I'll play the pushy friend. Answer the way you'd really say it.")}
+    ${Object.entries(SCENES).map(([k, s]) => TapCard(s.icon, s.label, esc(s.lines[0]), { act: 'p-scene', arg: k })).join('')}`;
   }
   const sc = SCENES[p.scene];
   if (p.round >= 3) {
     const msg = p.stars >= 8 ? "You've got this. Your refusals were clear, short, and kind of unstoppable." : p.stars >= 5 ? "Solid. Tighten up the soft spots and you're set." : "Good start. This is a skill, and it gets easier every time you rehearse.";
-    return `${back('prevent', '← Menu')}<div class="card center"><h2>Round complete</h2><div class="clock">${p.stars} / 9</div><p>${msg}</p>
-      <button class="btn" data-act="p-scene" data-arg="${p.scene}">Go again</button>
-      <button class="btn ghost" data-go="prevent:practice">Try another situation</button></div>`;
+    return `${BackLink('prevent', '← Menu')}${Card(`${H2('Round complete')}<div class="text-4xl font-extrabold tabular-nums">${p.stars} / 9</div><p>${msg}</p>
+      ${Button('Go again', { act: 'p-scene', arg: p.scene })}${Button('Try another situation', { go: 'prevent:practice', variant: 'outline' })}`, { cls: 'text-center', fx: true })}`;
   }
-  const fb = p.fb;
-  return `${back('prevent', '← Menu')}<div class="tag">${sc.label} · pressure level ${p.round + 1} of 3</div>
-    <div class="bubble">🧑‍🎤 ${esc(sc.lines[p.round])}</div>
-    ${fb ? `<div class="bubble me">${esc(fb.text)}</div>
-      <div class="card"><b>${'★'.repeat(fb.stars)}${'☆'.repeat(3 - fb.stars)}</b>
+  const fb = p.fb, bubble = 'my-2.5 max-w-[90%] rounded-2xl px-3.5 py-3';
+  const stars = fb ? Array.from({ length: 3 }, (_, i) => i < fb.stars ? '<span data-star class="inline-block text-2xl text-warning">★</span>' : '<span class="inline-block text-2xl text-border">★</span>').join('') : '';
+  return `${BackLink('prevent', '← Menu')}<div>${Badge(`${sc.label} · pressure level ${p.round + 1} of 3`)}</div>
+    <div class="${bubble} rounded-bl-sm bg-warning-soft" data-fx>🧑‍🎤 ${esc(sc.lines[p.round])}</div>
+    ${fb ? `<div class="${bubble} ml-auto rounded-br-sm bg-secondary" data-fx>${esc(fb.text)}</div>
+      ${Card(`<div>${stars}</div>
         ${fb.good.map(g => `<p>✅ ${g}</p>`).join('')}${fb.tips.map(g => `<p>💡 ${g}</p>`).join('')}
-        <button class="btn" data-act="p-next">${p.round >= 2 ? 'See results' : 'Next: they push harder'}</button></div>`
-    : `<div class="card"><label for="reply">Your reply</label><textarea id="reply" rows="3" placeholder="What would you say?"></textarea>
-        <button class="btn" data-act="p-send">Send</button>
-        <div class="small muted" style="margin-top:10px">Need ideas?</div>
-        <div class="chips">${SAMPLES.map(s => `<button class="chip" data-act="p-sample" data-arg="${esc(s)}">${esc(s)}</button>`).join('')}</div></div>`}`;
+        ${Button(p.round >= 2 ? 'See results' : 'Next: they push harder', { act: 'p-next' })}`, { fx: true })}`
+    : Card(`${Textarea('reply', 'Your reply', '', 'rows="3" placeholder="What would you say?"')}
+        ${Button('Send', { act: 'p-send' })}
+        <div class="mt-2.5 text-sm text-muted-foreground">Need ideas?</div>
+        <div class="my-2 flex flex-wrap gap-2">${SAMPLES.map(s => `<button class="rounded-full border-2 border-border bg-card px-3.5 py-1.5 text-left text-sm transition hover:border-primary active:scale-[.97]" data-act="p-sample" data-arg="${esc(s)}">${esc(s)}</button>`).join('')}</div>`, { fx: true })}`;
 }
 
 function vFacts() {
   const f = S.facts;
   if (f.i >= FACTS.length) {
-    return `${back('prevent', '← Menu')}<div class="card center"><h2>You got ${f.score} of ${FACTS.length}</h2><p class="muted">Whatever the score, you now know more than most people.</p>
-      <button class="btn" data-go="prevent:facts">Play again</button></div>`;
+    return `${BackLink('prevent', '← Menu')}${Card(`${H2(`You got ${f.score} of ${FACTS.length}`)}${Muted('Whatever the score, you now know more than most people.')}
+      ${Button('Play again', { go: 'prevent:facts' })}`, { cls: 'text-center', fx: true })}`;
   }
   const c = FACTS[f.i];
-  return `${back('prevent', '← Menu')}<div class="dots">${FACTS.map((_, i) => `<i class="${i <= f.i ? 'on' : ''}"></i>`).join('')}</div>
-    <div class="card"><h2 style="margin-top:0">${c.q}</h2>
+  return `${BackLink('prevent', '← Menu')}${Steps(FACTS.length, f.i)}
+    ${Card(`${H2(c.q, 'mt-0')}
     ${f.ans === null
-      ? `<button class="btn ghost" data-act="f-ans" data-arg="1">Fact</button><button class="btn ghost" data-act="f-ans" data-arg="0">Myth</button>`
-      : `<span class="tag ${f.ans === c.a ? 'good' : 'hard'}">${f.ans === c.a ? 'Correct' : 'Not quite'} — it's a ${c.a ? 'fact' : 'myth'}</span><p>${c.why}</p><button class="btn" data-act="f-next">Next</button>`}
-    </div>`;
+      ? Button('Fact', { act: 'f-ans', arg: '1', variant: 'outline' }) + Button('Myth', { act: 'f-ans', arg: '0', variant: 'outline' })
+      : `${Badge(`${f.ans === c.a ? 'Correct' : 'Not quite'} — it's a ${c.a ? 'fact' : 'myth'}`, f.ans === c.a ? 'good' : 'hard')}<p>${c.why}</p>${Button('Next', { act: 'f-next' })}`}`, { fx: true })}`;
 }
 
 function vRecover() {
   if (S.sub === 'rescue') return vRescue();
   if (S.sub === 'tracker') return vTracker();
   const t = store.get('tracker');
-  return `<h1>Recover</h1><p class="muted">Every day you're here counts.</p>
-  <button class="btn big" data-go="recover:rescue">🆘 I have a craving right now</button>
-  <button class="card tap" data-go="recover:tracker"><div class="ic">📈</div><div><h3>My progress</h3><span class="muted">${t ? `Day ${daysSince(t.start)} · $${Math.round(daysSince(t.start) * t.perDay)} saved` : 'Set up your streak, money saved and support plan.'}</span></div></button>
-  <button class="card tap" data-go="help"><div class="ic">🤝</div><div><h3>Talk to a real person</h3><span class="muted">Free and confidential, any time.</span></div></button>`;
+  return `${H1('Recover')}${Muted("Every day you're here counts.")}
+  ${Button('🆘 I have a craving right now', { go: 'recover:rescue', size: 'lg', cls: 'my-3' })}
+  ${TapCard('📈', 'My progress', t ? `Day ${daysSince(t.start)} · $${Math.round(daysSince(t.start) * t.perDay)} saved` : 'Set up your streak, money saved and support plan.', { go: 'recover:tracker' })}
+  ${TapCard('🤝', 'Talk to a real person', 'Free and confidential, any time.', { go: 'help' })}`;
 }
 
 const RESCUE_STEPS = ['Breathe', 'Ground yourself', 'Keep your hands busy', 'Remember your why', 'Reach out'];
@@ -303,21 +325,30 @@ function vRescue() {
   const r = S.rescue, plan = store.get('plan', {});
   if (r.done) {
     const n = store.get('rescues', 0);
-    return `<div class="card center"><div style="font-size:48px">🌊</div><h2>You rode it out.</h2>
+    return Card(`<div id="wave" class="text-5xl">🌊</div>${H2('You rode it out.')}
       <p>That craving rose, peaked, and passed — and you didn't have to fight it alone. That's ${n} rode out so far.</p>
-      <button class="btn" data-go="recover">Done</button></div>`;
+      ${Button('Done', { go: 'recover' })}`, { cls: 'text-center' });
   }
+  const who = esc(plan.name || 'them');
   const body = [
-    `<p>In for 4, out for 6. Follow the circle. Cravings crest and fade — you only have to outlast the wave.</p><div class="breath"></div><div class="center"><b id="breath">Breathe in</b></div>`,
-    `<p>Name out loud, or in your head:</p><div class="note">5 things you can <b>see</b><br>4 things you can <b>touch</b><br>3 things you can <b>hear</b><br>2 things you can <b>smell</b><br>1 thing you can <b>taste</b></div>`,
-    `<p>Tap the glowing dot as many times as you can. Your brain can't fully chase a craving and a game at once.</p><div class="arena" id="arena"><button class="dot" style="left:40%;top:40%" data-act="dot" aria-label="Tap"></button></div><p class="center"><b id="score">${r.score}</b> <span class="muted">taps</span></p>`,
-    plan.why ? `<p>You wrote this for yourself:</p><div class="note" style="font-size:19px">“${esc(plan.why)}”</div>` : `<p>You haven't written your “why” yet. Take a second to think: who or what are you doing this for?</p><button class="btn ghost" data-go="recover:tracker">Write it in My progress</button>`,
-    plan.phone ? `<p>Send ${esc(plan.name || 'your person')} a message. You don't need to explain.</p><a class="btn" href="sms:${esc(plan.phone)}?&body=${encodeURIComponent("Hey, I'm having a rough moment. Can you talk?")}">💬 Text ${esc(plan.name || 'them')}</a><a class="btn ghost" href="tel:${esc(plan.phone)}">📞 Call</a>` : `<p>Nobody saved yet. You can still reach a real person right now.</p><button class="btn" data-go="help">Open hotlines</button><button class="btn ghost" data-go="recover:tracker">Save a trusted contact</button>`
+    `<p>In for 4, out for 6. Follow the circle. Cravings crest and fade — you only have to outlast the wave.</p>
+     <div class="mx-auto my-6 size-36 animate-breathe rounded-full opacity-90 motion-reduce:animate-none" style="background:radial-gradient(circle,var(--primary),var(--secondary))"></div>
+     <div class="text-center"><b id="breath">Breathe in</b></div>`,
+    `<p>Name out loud, or in your head:</p>${Note('5 things you can <b>see</b><br>4 things you can <b>touch</b><br>3 things you can <b>hear</b><br>2 things you can <b>smell</b><br>1 thing you can <b>taste</b>')}`,
+    `<p>Tap the glowing dot as many times as you can. Your brain can't fully chase a craving and a game at once.</p>
+     <div id="arena" class="relative h-56 touch-manipulation overflow-hidden rounded-2xl border-2 border-border bg-background">
+       <button class="absolute size-14 rounded-full bg-warning shadow-[0_0_0_6px_var(--warning-soft)]" style="left:40%;top:40%" data-act="dot" aria-label="Tap"></button></div>
+     <p class="text-center"><b id="score">${r.score}</b> <span class="text-muted-foreground">taps</span></p>`,
+    plan.why ? `<p>You wrote this for yourself:</p>${Note(`<span class="text-xl">“${esc(plan.why)}”</span>`)}`
+      : `<p>You haven't written your “why” yet. Take a second to think: who or what are you doing this for?</p>${Button('Write it in My progress', { go: 'recover:tracker', variant: 'outline' })}`,
+    plan.phone ? `<p>Send ${esc(plan.name || 'your person')} a message. You don't need to explain.</p>
+      ${Button(`💬 Text ${who}`, { href: `sms:${esc(plan.phone)}?&body=${encodeURIComponent("Hey, I'm having a rough moment. Can you talk?")}` })}${Button('📞 Call', { href: `tel:${esc(plan.phone)}`, variant: 'outline' })}`
+      : `<p>Nobody saved yet. You can still reach a real person right now.</p>${Button('Open hotlines', { go: 'help' })}${Button('Save a trusted contact', { go: 'recover:tracker', variant: 'outline' })}`
   ][r.step];
-  return `${back('recover', '← Leave')}<div class="center"><div class="clock" id="clock">10:00</div><div class="small muted">Urges tend to fade within minutes. You only have to get through this one.</div></div>
-    <div class="dots" style="margin-top:14px">${RESCUE_STEPS.map((_, i) => `<i class="${i <= r.step ? 'on' : ''}"></i>`).join('')}</div>
-    <div class="card"><span class="tag">Step ${r.step + 1} of 5</span><h2 style="margin-top:8px">${RESCUE_STEPS[r.step]}</h2>${body}
-    <button class="btn ${r.step === 4 ? '' : 'ghost'}" data-act="r-next">${r.step === 4 ? "I'm through it" : 'Next step →'}</button></div>`;
+  return `${BackLink('recover', '← Leave')}<div class="text-center"><div id="clock" class="text-4xl font-extrabold tabular-nums">10:00</div><div class="text-xs text-muted-foreground">Urges tend to fade within minutes. You only have to get through this one.</div></div>
+    <div class="mt-3.5">${Steps(5, r.step)}</div>
+    ${Card(`${Badge(`Step ${r.step + 1} of 5`)}${H2(RESCUE_STEPS[r.step], 'mt-2')}${body}
+    ${Button(r.step === 4 ? "I'm through it" : 'Next step →', { act: 'r-next', variant: r.step === 4 ? 'default' : 'outline' })}`, { fx: true })}`;
 }
 
 const MILES = [[1, '1 day'], [3, '3 days'], [7, '1 week'], [14, '2 weeks'], [30, '1 month'], [60, '2 months'], [90, '3 months'], [180, '6 months'], [365, '1 year']];
@@ -327,39 +358,41 @@ const daysSince = iso => Math.max(0, Math.floor((Date.now() - new Date(iso).getT
 function vTracker() {
   const t = store.get('tracker'), plan = store.get('plan', {});
   const today = new Date().toISOString().slice(0, 10);
-  const planCard = `<div class="card"><h2 style="margin-top:0">My support plan</h2><p class="muted small">Used by the craving rescue button. Stored only on this device.</p>
-    <label for="why">Why I'm doing this</label><textarea id="why" rows="2" placeholder="e.g. So I can play in the final this year">${esc(plan.why)}</textarea>
-    <label for="cname">Trusted person</label><input id="cname" placeholder="Name" value="${esc(plan.name)}">
-    <label for="cphone">Their phone number</label><input id="cphone" type="tel" placeholder="Phone" value="${esc(plan.phone)}">
-    <button class="btn" data-act="save-plan">Save plan</button></div>`;
+  const planCard = Card(`${H2('My support plan', 'mt-0')}${Muted('Used by the craving rescue button. Stored only on this device.', 'text-sm')}
+    ${Textarea('why', "Why I'm doing this", esc(plan.why), 'rows="2" placeholder="e.g. So I can play in the final this year"')}
+    ${Input('cname', 'Trusted person', `placeholder="Name" value="${esc(plan.name)}"`)}
+    ${Input('cphone', 'Their phone number', `type="tel" placeholder="Phone" value="${esc(plan.phone)}"`)}
+    ${Button('Save plan', { act: 'save-plan' })}`);
   if (!t) {
-    return `${back('recover', '← Back')}<h1>Start your streak</h1><div class="card">
-      <label for="thing">What are you quitting? (optional)</label><input id="thing" placeholder="e.g. vaping">
-      <label for="perday">About how much did it cost per day? ($)</label><input id="perday" type="number" min="0" step="0.5" value="8">
-      <label for="start">Quit date</label><input id="start" type="date" max="${today}" value="${today}">
-      <button class="btn" data-act="save-tracker">Start tracking</button></div>${planCard}
-      <div class="note small">Quitting some substances (alcohol, benzodiazepines) suddenly can be medically dangerous. If you've used heavily, talk to a doctor before stopping.</div>`;
+    return `${BackLink('recover', '← Back')}${H1('Start your streak')}${Card(
+      `${Input('thing', 'What are you quitting? (optional)', 'placeholder="e.g. vaping"')}
+      ${Input('perday', 'About how much did it cost per day? ($)', 'type="number" min="0" step="0.5" value="8"')}
+      ${Input('start', 'Quit date', `type="date" max="${today}" value="${today}"`)}
+      ${Button('Start tracking', { act: 'save-tracker' })}`)}${planCard}
+      ${Note('Quitting some substances (alcohol, benzodiazepines) suddenly can be medically dangerous. If you\'ve used heavily, talk to a doctor before stopping.', 'text-sm')}`;
   }
   const d = daysSince(t.start), money = Math.round(d * t.perDay), buy = BUYS.find(([min]) => money >= min)[1];
   const next = MILES.find(([n]) => n > d);
-  return `${back('recover', '← Back')}<h1>${d === 0 ? 'Day one. You showed up.' : `${d} day${d === 1 ? '' : 's'}${t.thing ? ` without ${esc(t.thing)}` : ''}`}</h1>
-    <div class="stats"><div class="stat"><b>${d}</b><span>days</span></div><div class="stat"><b>$${money}</b><span>not spent</span></div>
-      <div class="stat"><b>${store.get('rescues', 0)}</b><span>cravings rode out</span></div><div class="stat"><b>${Math.max(t.best || 0, d)}</b><span>best streak (days)</span></div></div>
-    <div class="card"><b>That's about ${buy}.</b><p class="muted small">${next ? `Next milestone: ${next[1]}, ${next[0] - d} day${next[0] - d === 1 ? '' : 's'} to go.` : "You've passed every milestone here. Incredible."}</p>
-      <div class="miles">${MILES.map(([n, l]) => `<div class="mile ${d >= n ? 'got' : ''}">${d >= n ? '✓ ' : ''}${l}</div>`).join('')}</div></div>
+  const stat = (val, label, prefix = '') => `<div class="rounded-2xl bg-secondary p-3.5 text-center"><b class="block text-3xl font-extrabold leading-tight tabular-nums" data-count="${val}" data-prefix="${prefix}">${prefix}${val}</b><span class="text-sm text-muted-foreground">${label}</span></div>`;
+  return `${BackLink('recover', '← Back')}${H1(d === 0 ? 'Day one. You showed up.' : `${d} day${d === 1 ? '' : 's'}${t.thing ? ` without ${esc(t.thing)}` : ''}`)}
+    <div class="grid grid-cols-2 gap-2.5">${stat(d, 'days')}${stat(money, 'not spent', '$')}${stat(store.get('rescues', 0), 'cravings rode out')}${stat(Math.max(t.best || 0, d), 'best streak (days)')}</div>
+    ${Card(`<b>That's about ${buy}.</b>${Muted(next ? `Next milestone: ${next[1]}, ${next[0] - d} day${next[0] - d === 1 ? '' : 's'} to go.` : "You've passed every milestone here. Incredible.", 'text-sm')}
+      <div class="flex flex-wrap gap-2">${MILES.map(([n, l]) => d >= n
+        ? `<div class="mile-got rounded-xl border-2 border-primary bg-secondary px-3 py-2 text-sm font-semibold">✓ ${l}</div>`
+        : `<div class="rounded-xl border-2 border-dashed border-border px-3 py-2 text-sm text-muted-foreground">${l}</div>`).join('')}</div>`)}
     ${planCard}
-    <div class="card"><b>Had a slip?</b><p class="muted">It happens to many people in recovery, and it doesn't erase your progress. Your best streak is kept.</p>
-      <button class="btn ghost" data-act="slip">Start a fresh streak</button></div>`;
+    ${Card(`<b>Had a slip?</b>${Muted("It happens to many people in recovery, and it doesn't erase your progress. Your best streak is kept.")}
+      ${Button('Start a fresh streak', { act: 'slip', variant: 'outline' })}`)}`;
 }
 
 function vHelp() {
-  return `<h1>Get help now</h1><p class="muted">Free, confidential, and no judgment. (Numbers shown are for the US; swap in your local ones.)</p>
-  <div class="card">${HOTLINES.map(([n, d, href, label]) => `<div class="hot"><div><b>${n}</b><br><span class="muted small">${d}</span></div><a href="${href}">${label}</a></div>`).join('')}</div>
-  <div class="card"><h2 style="margin-top:0">I'm not ready to quit — I just want to talk</h2>
+  return `${H1('Get help now')}${Muted('Free, confidential, and no judgment. (Numbers shown are for the US; swap in your local ones.)')}
+  ${Card(HOTLINES.map(([n, d, href, label]) => `<div class="flex items-center justify-between gap-3 border-b border-border py-3 last:border-0"><div><b>${n}</b><br><span class="text-sm text-muted-foreground">${d}</span></div><a class="whitespace-nowrap font-bold text-primary no-underline" href="${href}">${label}</a></div>`).join(''), { cls: 'py-2' })}
+  ${Card(`${H2("I'm not ready to quit — I just want to talk", 'mt-0')}
     <p>That's okay. You don't have to be ready to call. The SAMHSA helpline will talk through options with no pressure.</p>
-    <div class="note"><b>Safer-use basics, if you're using right now:</b><br>• Don't use alone. Tell someone or use with a person who can call for help.<br>• Assume any pill not from a pharmacy could contain fentanyl.<br>• If you use opioids, carry naloxone (Narcan). Many pharmacies offer it without a prescription.<br>• Don't mix substances, especially with alcohol or sedatives.</div>
-    <a class="btn" href="tel:18006624357">Call SAMHSA: 1-800-662-4357</a></div>
-  <div class="card"><h2 style="margin-top:0">Worried about someone else?</h2><p>Stay calm, pick a private moment, and lead with care: “I've noticed you seem off lately, and I care about you.” Ask questions before giving advice, and offer to help them find support.</p></div>`;
+    ${Note("<b>Safer-use basics, if you're using right now:</b><br>• Don't use alone. Tell someone or use with a person who can call for help.<br>• Assume any pill not from a pharmacy could contain fentanyl.<br>• If you use opioids, carry naloxone (Narcan). Many pharmacies offer it without a prescription.<br>• Don't mix substances, especially with alcohol or sedatives.")}
+    ${Button('Call SAMHSA: 1-800-662-4357', { href: 'tel:18006624357' })}`)}
+  ${Card(`${H2('Worried about someone else?', 'mt-0')}<p>Stay calm, pick a private moment, and lead with care: “I've noticed you seem off lately, and I care about you.” Ask questions before giving advice, and offer to help them find support.</p>`)}`;
 }
 
 /* ---------- live updates (no re-render, so games keep state) ---------- */
@@ -374,29 +407,30 @@ function tick() {
 const ACTIONS = {
   'story-go': to => { S.story.node = to; render(); window.scrollTo(0, 0); },
   'story-restart': () => go('prevent', 'story'),
-  'p-scene': k => { S.practice = { scene: k, round: 0, stars: 0, fb: null }; render(); },
+  'p-scene': k => { S.practice = { scene: k, round: 0, stars: 0, fb: null }; render(true); },
   'p-sample': s => { $('#reply').value = s; $('#reply').focus(); },
-  'p-send': () => { const text = $('#reply').value; const res = coach(text); if (!text.trim()) return $('#reply').focus(); S.practice.fb = { ...res, text }; S.practice.stars += res.stars; render(); },
+  'p-send': () => { const text = $('#reply').value; if (!text.trim()) return $('#reply').focus(); const res = coach(text); S.practice.fb = { ...res, text }; S.practice.stars += res.stars; render(); },
   'p-next': () => { S.practice.round++; S.practice.fb = null; render(); },
   'f-ans': v => { const f = S.facts; f.ans = v === '1'; if (f.ans === FACTS[f.i].a) f.score++; render(); },
   'f-next': () => { S.facts.i++; S.facts.ans = null; render(); },
   'r-next': () => {
     const r = S.rescue;
     if (r.step < 4) { r.step++; return render(); }
-    store.set('rescues', store.get('rescues', 0) + 1); r.done = true; render();
+    store.set('rescues', store.get('rescues', 0) + 1); r.done = true; render(true);
   },
   'dot': (_, el) => {
     S.rescue.score++; $('#score').textContent = S.rescue.score;
     el.style.left = (Math.random() * 78 + 2) + '%'; el.style.top = (Math.random() * 70 + 2) + '%';
+    run(m => m.animate(el, { scale: [.5, 1] }, { duration: .25, ease: 'easeOut' }));
   },
   'save-tracker': () => {
     store.set('tracker', { thing: $('#thing').value.trim(), perDay: Math.max(0, parseFloat($('#perday').value) || 0), start: ($('#start').value || new Date().toISOString().slice(0, 10)) + 'T00:00:00', best: 0 });
-    savePlan(); render();
+    savePlan(); render(true);
   },
   'save-plan': (_, el) => { savePlan(); el.textContent = 'Saved ✓'; },
   'slip': () => {
     if (!confirm('Start a fresh streak? Your best streak will be kept.')) return;
-    const t = store.get('tracker'); t.best = Math.max(t.best || 0, daysSince(t.start)); t.start = new Date().toISOString(); store.set('tracker', t); render();
+    const t = store.get('tracker'); t.best = Math.max(t.best || 0, daysSince(t.start)); t.start = new Date().toISOString(); store.set('tracker', t); render(true);
   }
 };
 function savePlan() {
@@ -404,7 +438,7 @@ function savePlan() {
   store.set('plan', { why: g('#why'), name: g('#cname'), phone: g('#cphone') });
 }
 
-render();
+render(true);
 </script>
 </body>
 </html>

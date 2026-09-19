@@ -41,7 +41,11 @@ Drug education for teens is usually a lecture, and lectures don't change behavio
 
 ## Technical approach
 
-- Single `index.html`, vanilla JS, no dependencies, no build. Opens from a file or any static host.
+- Single `index.html`, vanilla JS, no build step. Opens from a file or any static host.
+- **Styling:** Tailwind play CDN. Colors are shadcn-style tokens (`background`, `primary`, `secondary`, `destructive`, ...) mapped to CSS variables, so light and dark themes switch automatically.
+- **Components:** shadcn-style `Button`, `Card`, `Badge`, `Note`, `Input` helpers in JS (plain functions returning class-string templates). Real shadcn/ui is React-only; if the app moves to React, swap these for the actual components.
+- **Motion:** the `motion` library (vanilla Framer Motion) for screen transitions, star pops, and stat count-ups. All motion is skipped when the user prefers reduced motion or the CDN fails.
+- **Offline:** the CDNs need a connection on first load. To go fully offline, download the two scripts into `vendor/` and point the `<script>` tags at them.
 - State in memory; persistent data in `localStorage` under the `steady:` prefix.
 - Story content is data (`STORY` object), so adding branches needs no code changes.
 - Light and dark themes via `prefers-color-scheme`.

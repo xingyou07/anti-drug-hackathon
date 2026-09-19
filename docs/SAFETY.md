@@ -16,7 +16,7 @@ An app about drugs is used by vulnerable people. These are the rules the current
 
 ## Privacy
 
-- No accounts, analytics, or network requests. All data lives in `localStorage` under the `steady:` prefix.
+- No accounts or analytics. The only network requests are the two library downloads (Tailwind and Motion CDNs); nothing the user types is sent anywhere. All data lives in `localStorage` under the `steady:` prefix.
 - User text (practice replies, the "why" note, contact details) never leaves the device and is HTML-escaped before rendering.
 - **If an LLM is added,** route calls through a backend proxy, don't log conversations, and tell users their text is sent to a model provider.
 

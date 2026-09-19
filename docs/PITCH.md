@@ -33,13 +33,14 @@
 
 | Question | Answer |
 |---|---|
-| Where's the AI? | The prototype is rule-based so it's instant and offline. The roadmap swaps in Claude for dynamic stories and richer coaching, behind a backend proxy. |
+| Where's the AI? | The prototype is rule-based, so it's instant and needs no API key. The roadmap swaps in Claude for dynamic stories and richer coaching, behind a backend proxy. |
 | Is it safe for kids? | No accounts, no data collection, no graphic content, and hotlines on every path. See [SAFETY.md](SAFETY.md). |
 | Does it replace treatment? | No. It's a bridge to help. Every flow points to real people. |
 | How would you measure impact? | Rescues completed, streak retention, and the share of story runs ending on refusal or exit-plan outcomes. |
 
 ## Demo checklist
 
+- [ ] Open the app once on the demo wifi so the Tailwind and Motion CDNs are loaded (or vendor them locally for a fully offline demo).
 - [ ] Clear `localStorage` first so the tracker starts blank (`localStorage.clear()`).
 - [ ] Pre-fill a support plan with a fake contact for the rescue demo.
 - [ ] Test on a phone if possible. Dark and light themes both work.
