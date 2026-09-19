@@ -1,0 +1,13 @@
+{
+  "status": "UNREVIEWED_PLACEHOLDER",
+  "reviewedBy": null,
+  "reviewedOn": null,
+  "todo": "This entire page must be written by a legal/clinical partner before any real use. Fear of legal or disciplinary consequences is reportedly the dominant barrier to help-seeking, so a wrong or guessed answer here would do more damage than an honest blank. Do not add legal claims (confidentiality, immunity, reporting duties, etc.) without a named source who is qualified to make them.",
+  "title": "Am I going to get in trouble for asking for help?",
+  "body": [
+    "This is one of the first questions people actually have, and we don't want to skip past it just because we don't have a good answer yet.",
+    "The honest truth right now is: we don't have a legally reviewed answer to give you here. Guessing would be worse than saying nothing, so this page is a placeholder until a legal or clinical partner writes it properly.",
+    "If you need to know before you make a call, NAMS is the appropriate place to ask that exact question directly — you can ask what happens before you say anything else."
+  ],
+  "crisisNote": "If you're in danger right now, that question can wait. Use the red button."
+}

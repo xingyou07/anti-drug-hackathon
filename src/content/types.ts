@@ -125,3 +125,10 @@ export interface FakeCallFile extends ContentEnvelope {
   armedLabel: string;
   exitLine: string;
 }
+
+export interface LegalExplainerFile extends ContentEnvelope {
+  todo: string;
+  title: string;
+  body: string[];
+  crisisNote: string;
+}

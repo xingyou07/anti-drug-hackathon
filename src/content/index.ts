@@ -8,6 +8,7 @@ import breathingJson from './breathing.json';
 import crisisJson from './crisis-resources.json';
 import fakeCallJson from './fake-call.json';
 import groundingJson from './grounding.json';
+import legalExplainerJson from './legal-explainer.json';
 import onboardingJson from './onboarding.json';
 import privacyJson from './privacy.json';
 import refusalJson from './refusal-scripts.json';
@@ -18,6 +19,7 @@ import type {
   CrisisResourcesFile,
   FakeCallFile,
   GroundingFile,
+  LegalExplainerFile,
   OnboardingFile,
   PrivacyFile,
   RefusalScriptsFile,
@@ -29,6 +31,7 @@ export const breathingContent = breathingJson as BreathingFile;
 export const crisisResources = crisisJson as CrisisResourcesFile;
 export const fakeCallContent = fakeCallJson as FakeCallFile;
 export const groundingContent = groundingJson as GroundingFile;
+export const legalExplainerContent = legalExplainerJson as LegalExplainerFile;
 export const onboardingContent = onboardingJson as OnboardingFile;
 export const privacyContent = privacyJson as PrivacyFile;
 export const refusalContent = refusalJson as RefusalScriptsFile;

@@ -1,5 +1,6 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { AppFooter } from './AppFooter';
+import { useAppState } from '@/state/AppStateContext';
 
 export interface NavItem {
   to: string;
@@ -12,8 +13,24 @@ export interface NavItem {
  * (constraint 7). Nothing here links from one track into the other.
  */
 export function TrackLayout({ items }: { items: NavItem[] }): JSX.Element {
+  const { state } = useAppState();
+  const navigate = useNavigate();
+
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col">
+      {/* Constraint 10: Quick Exit is Recovery-only, and always present — not
+          a settings toggle — because that's when someone may need it fastest. */}
+      {state.track === 'recovery' ? (
+        <div className="flex justify-end px-4 pt-3">
+          <button
+            type="button"
+            onClick={() => navigate('/exit')}
+            className="tap-target rounded-lg border border-line px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-subtle transition hover:text-fg"
+          >
+            Exit
+          </button>
+        </div>
+      ) : null}
       <main className="flex-1">
         <Outlet />
       </main>

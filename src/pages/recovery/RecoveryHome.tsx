@@ -15,6 +15,7 @@ const TILES: Tile[] = [
   { to: '/recovery/grounding', title: 'Grounding', detail: '5-4-3-2-1, one sense at a time.', phase: null },
   { to: '/recovery/scripts', title: 'Refusal scripts', detail: 'Words for when one "no" is not enough.', phase: null },
   { to: '/recovery/fake-call', title: 'Fake call', detail: 'A reason to walk out of a room.', phase: null },
+  { to: '/recovery/legal', title: 'Am I going to get in trouble?', detail: "The question most people have first. We're honest that we don't have a reviewed answer yet.", phase: null },
   { to: '/recovery', title: 'Trigger zones', detail: 'Simulated, never your real location.', phase: 'Phase 4' },
   { to: '/recovery', title: 'Sponsor', detail: 'One number, stored on this phone.', phase: 'Phase 4' },
 ];
