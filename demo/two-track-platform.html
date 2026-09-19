@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The 10% — Two-Track Prototype</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS (play CDN — fine for a demo prototype, not a production build) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'media',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['"IBM Plex Mono"', 'monospace'],
+                    },
+                    colors: {
+                        // Youth track identity — informational, cooler.
+                        brand: { 50: '#eff8ff', 100: '#dbeefe', 400: '#4fa8e8', 500: '#1c7fd6', 600: '#1466ad', 900: '#123a5e' },
+                        // Recovery track identity — warmer, calmer.
+                        recovery: { 50: '#fbf6ff', 100: '#f1e4fe', 400: '#b07cf0', 500: '#8f4fe0', 600: '#7434c2', 900: '#3c1c66' },
+                        // Shared: crisis red and review-pending amber. Never reused for anything else.
+                        alert: { 50: '#fdf1f0', 100: '#fadedb', 400: '#e2483a', 500: '#c62f22', 600: '#a8281c' },
+                        flag: { 50: '#fdf7e8', 100: '#faedc4', 500: '#a3760a', 700: '#5c4206' },
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+    <!-- Babel for JSX (demo-only; a real build would precompile this) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Lucide icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body {
+            background-color: #f4f5f7;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .fade-in { animation: fadeIn 0.25s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .tap-target { min-height: 44px; min-width: 44px; }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+        /* ================================================================
+         * CONTENT LAYER
+         * Every hotline number, every hour, every statistic and every piece
+         * of scripted copy lives in this block. Nothing below it composes a
+         * number or a claim from scratch — components only ever read from
+         * here, mirroring src/content/*.json in the main build.
+         * ================================================================ */
+
+        const CRISIS_RESOURCES = [
+            { id: "sos", name: "SOS (Samaritans of Singapore)", number: "1767", channel: "voice",
+              blurb: "24-hour emotional support for anyone in distress.",
+              hours: { kind: "always" }, verified: "2026-09-19" },
+            { id: "caretext", name: "SOS CareText", number: "9151 1767", channel: "whatsapp",
+              blurb: "Text instead of talking. Useful when you can't be overheard.",
+              hours: { kind: "always" }, verified: "2026-09-19" },
+            { id: "emergency", name: "Emergency Ambulance / Police", number: "995", channel: "voice",
+              blurb: "Someone is unconscious, not breathing, fitting, or in immediate danger.",
+              hours: { kind: "always" }, verified: "2026-09-19" },
+            { id: "mindline", name: "National Mindline", number: "1771", channel: "voice",
+              blurb: "National mental health support line.",
+              hours: { kind: "always" }, verified: "2026-09-19" },
+            { id: "imh", name: "IMH Mental Health Helpline", number: "6389 2000", channel: "voice",
+              blurb: "Institute of Mental Health, round the clock.",
+              hours: { kind: "always" }, verified: "2026-09-19" },
+            { id: "nams", name: "NAMS Addictions Helpline", number: "1800 2255 227", channel: "voice",
+              blurb: "National Addictions Management Service.",
+              hours: { kind: "weekly", days: [1,2,3,4,5], open: "09:00", close: "18:00" }, verified: "2026-09-19" },
+            { id: "wecare", name: "WE CARE Community Services", number: "3165 8017", channel: "voice",
+              blurb: "Addiction recovery support and counselling.",
+              hours: { kind: "weekly", days: [1,2,3,4,5], open: "10:00", close: "18:00" }, verified: "2026-09-19" },
+            { id: "wecare-wa", name: "WE CARE (WhatsApp)", number: "8391 3023", channel: "whatsapp",
+              blurb: "Same service, over text.",
+              hours: { kind: "weekly", days: [1,2,3,4,5], open: "10:00", close: "18:00" }, verified: "2026-09-19" },
+            { id: "sana", name: "SANA Helpline", number: "1800 733 4444", channel: "voice",
+              blurb: "Singapore Anti-Narcotics Association.",
+              hours: null, verified: null, note: "Confirm with SANA before release" },
+            { id: "na", name: "Narcotics Anonymous Singapore", number: "8405 8432", channel: "voice",
+              blurb: "Peer fellowship. A person answers, not a service desk.",
+              hours: null, verified: null },
+        ];
+
+        const ONBOARDING = {
+            status: "UNREVIEWED_PLACEHOLDER",
+            steps: [
+                { title: "What this is", body: [
+                    "This is about one thing: the odds you cannot see.",
+                    "A handful of tools that work with no signal and no account, and a list of Singapore helplines one tap away from every screen."
+                ]},
+                { title: "What this isn't", body: [
+                    "Not medical advice, not counselling, not a substitute for a person.",
+                    "Not run by, checked by, or connected to any government agency or charity.",
+                    "Nobody is on the other end of this app. If you need someone right now, use the red button."
+                ]},
+            ],
+        };
+
+        const GROUND_STEPS = [
+            { n: 5, sense: "things you can see", hint: "Ordinary things. A door handle counts." },
+            { n: 4, sense: "things you can feel", hint: "The floor, your sleeve, the chair, the air." },
+            { n: 3, sense: "things you can hear", hint: "Two near, one far away." },
+            { n: 2, sense: "things you can smell", hint: "Or two smells you'd know anywhere." },
+            { n: 1, sense: "thing you can taste", hint: "Or one slow breath instead. Either is fine." },
+        ];
+
+        const BREATH_PATTERNS = {
+            box: { name: "Box breathing", detail: "Steady and symmetrical. Good when you want something to count.",
+                   phases: [{label:"Breathe in", s:4, grow:true},{label:"Hold", s:4, grow:true},{label:"Breathe out", s:4, grow:false},{label:"Hold", s:4, grow:false}] },
+            sigh: { name: "Physiological sigh", detail: "No holding at any point. Pick this if breath-holds make things worse — for a lot of people they do.",
+                    phases: [{label:"Breathe in", s:3, grow:true},{label:"Top it up", s:1, grow:true},{label:"Long breath out", s:6, grow:false}] },
+        };
+
+        const SURF_PROMPTS = [
+            "Where is it in your body? Chest, stomach, jaw, hands. Just locate it.",
+            "Name five things you can see that are the same colour.",
+            "Put your hands under cold water. Notice the second it stops feeling cold.",
+            "Count backwards from 100 in sevens. Start over if you lose it.",
+            "Stand up. Walk to a different room. Sit somewhere you weren't sitting.",
+            "Unclench your jaw. Drop your shoulders. You'd been holding both.",
+            "Is it going up, down, or holding? You don't have to change it. Just check.",
+            "Text someone something completely unrelated. A meme counts.",
+        ];
+
+        const REFUSAL_CONTEXTS = [
+            { id: "friend", label: "A friend you trust", blurb: "Not a stranger. Someone whose opinion of you actually matters.",
+              tones: { light: ["I'm good — but pass it on, don't waste it on me.", "Ha, still good. You can stop checking.", "I'm gonna go get a drink. Come find me after."],
+                        flat: ["No thanks.", "Still no. It's not a mood thing.", "I'm gonna head off. Text me tomorrow."],
+                        firm: ["No. I'd rather you didn't offer me that.", "I've said no. I don't want to say it a third time.", "I'm going to go. This doesn't change anything between us, but I'm going."] } },
+            { id: "nightlife", label: "Nightlife", blurb: "A club, a bar, someone's place after.",
+              tones: { light: ["I'm good, seriously.", "Still good. Ask me again next year.", "I'm gonna go find water. Catch you later."],
+                        flat: ["No thanks.", "I said no.", "I'm heading off. See you."],
+                        firm: ["Not for me. Don't offer again.", "I've told you once. Drop it.", "I'm leaving. This isn't a discussion."] } },
+            { id: "ns", label: "NS bunk", blurb: "You can't leave, and you'll see these people tomorrow.",
+              tones: { light: ["Nah, I've got enough problems already.", "Still got those problems. Still passing.", "I'm gonna go take a walk. Back later."],
+                        flat: ["Not interested.", "Still not interested.", "I'm going back to my bunk."],
+                        firm: ["No. And keep it away from me.", "I already said no. That's the last time.", "Don't involve me in this. I'm going."] } },
+            { id: "hall", label: "Hall or uni", blurb: "Your room is thirty seconds away, which is your advantage.",
+              tones: { light: ["I'm out — got a 9am.", "Still out. The 9am hasn't moved.", "Right, I'm heading up. Night."],
+                        flat: ["No thanks, not my thing.", "Still no.", "I'm going back to my room."],
+                        firm: ["No. I don't want to be asked again.", "That's twice. Stop.", "I'm leaving now."] } },
+            { id: "family", label: "Family gathering", blurb: "The hardest room to leave, and one you can't stop being in.",
+              tones: { light: ["Aiyah, not for me lah.", "Still not for me. Don't waste it.", "I'm gonna go help in the kitchen."],
+                        flat: ["No, thank you.", "I'm still going to say no.", "I'm stepping out for some air."],
+                        firm: ["No. I'd rather not explain why.", "I've said no. Please respect that.", "I'm going to head off. I'll call you tomorrow."] } },
+            { id: "exams", label: "Exam crunch", blurb: "When someone offers a shortcut and you're tired enough to consider it.",
+              tones: { light: ["Nah, I'd rather just be tired.", "Still rather be tired. It's going great.", "I'm gonna go sleep for real. Night."],
+                        flat: ["No, I'm not doing that.", "Still no.", "I'm going home to sleep."],
+                        firm: ["No. I'm not putting my exams on it.", "I've said no. Don't offer again.", "I'm leaving the library. See you after."] } },
+        ];
+        const LADDER_LABELS = ["First time they ask", "They push", "They push again — your exit"];
+
+        // Pressure scenarios. Per the brief: at least 4 of 6 must have no drugs at
+        // all, because the skill trained is exit-from-pressure, which generalises.
+        // Every branch has multiple valid exits and no fail state.
+        const SCENARIOS = [
+            {
+                id: "void-deck", label: "The void deck", hasDrugs: true,
+                setup: "It's a Tuesday. You're sitting downstairs with people you've known since primary school. One of them holds something out — not a stranger, someone whose opinion of you matters. He says he's had it before and it's fine. He isn't lying to you; he genuinely doesn't know what's in it, because the person who sold it to him didn't know either.",
+                exits: [
+                    { label: "\"I'm good — pass it on, don't waste it on me.\"", note: "Light and quick. Keeps the moment small and doesn't make it about him." },
+                    { label: "\"No thanks. Not my thing.\"", note: "Flat and final. No explanation owed." },
+                    { label: "Get up and go buy a drink.", note: "Physical exit. Sometimes the strongest move is just not being in the conversation anymore." },
+                ],
+            },
+            {
+                id: "exam-burnout", label: "Exam-week burnout", hasDrugs: false,
+                setup: "Three papers in four days and you haven't slept properly all week. A course-mate says they've got something that'll help you \"lock in\" for one more all-nighter — no details, just a knowing look and \"trust me, everyone does it before finals.\"",
+                exits: [
+                    { label: "\"I'll just take the L on this one paper and sleep.\"", note: "Sometimes the exit is lowering the stakes, not fighting through them." },
+                    { label: "\"I'm gonna go nap for two hours and try again.\"", note: "Buys time without a confrontation." },
+                    { label: "Text a friend who isn't in this room.", note: "Getting one outside voice into the moment often breaks its pull." },
+                ],
+            },
+            {
+                id: "brothers-friends", label: "A friend's older brother", hasDrugs: false,
+                setup: "You're at a friend's place and his older brother's crew is over, a few years ahead of you, clearly the \"cool\" ones. One of them offers you a vape that isn't just nicotine and says \"don't be soft, your boy does it too\" — except your friend looks just as uncomfortable as you feel.",
+                exits: [
+                    { label: "\"Nah, I'm good.\" and catch your friend's eye.", note: "You don't have to say more — a look can be an exit for two people at once." },
+                    { label: "\"We were about to head out anyway.\"", note: "Gives both of you a shared reason to leave the room." },
+                    { label: "Ask to see something else in the house.", note: "Redirecting the moment is a real exit, not a dodge." },
+                ],
+            },
+            {
+                id: "overseas-trip", label: "Overseas trip", hasDrugs: false,
+                setup: "You're on a grad trip somewhere the rules feel looser. Someone in the group says \"it's basically legal here, no one back home will ever know\" and passes something round the table.",
+                exits: [
+                    { label: "\"I'd rather not deal with anything at customs.\"", note: "Practical, not preachy — and true regardless of what's actually enforceable." },
+                    { label: "\"I'm good, I want a clear head for tomorrow.\"", note: "Ties the no to something you're looking forward to, not to fear." },
+                    { label: "Step outside to take photos / call home.", note: "A believable, low-drama reason to not be at the table right then." },
+                ],
+            },
+            {
+                id: "party-alcohol", label: "A party where the pressure is alcohol", hasDrugs: false,
+                setup: "Someone's already lining up shots and pushing one into your hand, loudly, in front of people you're trying to make a good impression on. \"Come on, one won't kill you.\"",
+                exits: [
+                    { label: "\"I'm driving later.\"", note: "One of the few reasons almost nobody argues with." },
+                    { label: "\"I'm good with this drink, thanks.\"", note: "Hold up what's already in your hand instead of explaining an empty one." },
+                    { label: "\"Race you to the food table instead.\"", note: "Redirect the energy rather than refusing it head-on." },
+                ],
+            },
+            {
+                id: "group-chat", label: "The group chat", hasDrugs: false,
+                setup: "A chat you're in is hyping up a \"plan\" for the weekend that you're not comfortable with, and everyone's replying with fire emojis. Silence in a group chat can feel louder than saying no out loud.",
+                exits: [
+                    { label: "React, don't reply. \"👍\" then quietly don't show up.", note: "You don't owe the group chat a debate." },
+                    { label: "DM one person you trust in the group instead.", note: "Peeling off one ally is often easier than addressing the whole chat." },
+                    { label: "\"Can't make it, got something on.\" — true or not, it's yours to use.", note: "A group chat isn't a courtroom. You don't need a verified alibi." },
+                ],
+            },
+        ];
+
+        // Reality Check: brief asks for a placeholder figure with a TODO to source
+        // it. Unlike every other statistic on this page, this one has no source at
+        // all yet — so unlike the others, it does NOT get a citation button. It is
+        // shown plainly as unsourced, which is the honest way to keep the brief's
+        // ask without inventing a source constraint 13 would otherwise require.
+        const REALITY_CHECK = {
+            status: "UNREVIEWED_PLACEHOLDER",
+            prompt: "Out of 100 Singapore students your age, how many do you think have ever tried an illegal drug?",
+            placeholderAnswer: 6,
+            note: "This figure has not been sourced yet — it is a placeholder pending NCADA/CNB statistics, not a real data point. Nothing above this line should be quoted from this screen.",
+        };
+
+        const STAT_ETOMIDATE = {
+            claim: "1 in 3 vapes seized in Singapore were found to contain etomidate.",
+            source: "Parliament, Sept 2025 — reported figure. Status: UNREVIEWED_PLACEHOLDER — verify against the primary CNB/HSA/NCADA source before real use.",
+        };
+        const STAT_CLASS_C = {
+            claim: "Etomidate has been reclassified as a Class C controlled drug, and Kpods have reportedly reached users as young as 12.",
+            source: "Reported figures, Sept 2025. Both marked placeholder pending verification.",
+        };
+
+        const QA_SEED = [
+            { q: "Is vaping actually addictive, or is that overblown?", a: "Nicotine is addictive regardless of delivery method, and some seized vapes in Singapore have also tested positive for controlled substances mixed in, which changes the risk profile entirely from \"just nicotine.\"" },
+            { q: "What happens if I ask for help for a friend who's using?", a: "You can contact NAMS to ask what your options are. You are not committing your friend to anything by asking a question." },
+            { q: "Do I get in trouble just for asking questions here?", a: "No. Nothing you type here is linked to who you are, and nobody is monitoring this in real time — see the note before you submit a question." },
+        ];
+
+        const SPONSOR_NOTE = "Ask them first. They'll get a call from you, not from us.";
+
+        const SUPPORT_CIRCLES = [
+            { name: "NA Singapore — general meeting", area: "Central", lastChecked: "2026-08-01", link: "https://nasingapore.org" },
+            { name: "WE CARE — peer support group", area: "Toa Payoh", lastChecked: "2026-08-01", link: "https://wecare.org.sg" },
+            { name: "NA Singapore — online meeting", area: "Online", lastChecked: "2026-08-01", link: "https://nasingapore.org" },
+            { name: "WE CARE — family support group", area: "Toa Payoh", lastChecked: "2026-08-01", link: "https://wecare.org.sg" },
+            { name: "NA Singapore — weekend meeting", area: "East", lastChecked: "2026-08-01", link: "https://nasingapore.org" },
+        ];
+
+        const WORK_LINKS = [
+            { name: "MyCareersFuture", detail: "Singapore's national jobs portal.", href: "https://www.mycareersfuture.gov.sg/" },
+            { name: "Workforce Singapore (WSG)", detail: "Career coaching and training support.", href: "https://www.wsg.gov.sg/" },
+        ];
+
+        const DISCLAIMER = "Independent prototype. Not affiliated with or endorsed by MOE, NCADA, CNB, SANA, NAMS, WE CARE or SPS.";
+
+        /* ================================================================
+         * TIME / HOURS — computed at render time, in Singapore time.
+         * ================================================================ */
+
+        const DAY_INDEX = { Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6 };
+        const DAY_NAME = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+        function sgNow() {
+            const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Singapore", weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(new Date());
+            const get = (t) => (parts.find(p => p.type === t) || {}).value || "";
+            const h = parseInt(get("hour"), 10) % 24;
+            const m = parseInt(get("minute"), 10);
+            return { day: DAY_INDEX[get("weekday")] || 0, minutes: (h||0) * 60 + (m||0) };
+        }
+        function toMinutes(hhmm) { const b = hhmm.split(":"); return parseInt(b[0],10) * 60 + parseInt(b[1],10); }
+        function clock12(minutes) {
+            const h24 = Math.floor(minutes / 60) % 24, m = minutes % 60;
+            const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+            return h12 + ":" + String(m).padStart(2, "0") + (h24 < 12 ? "am" : "pm");
+        }
+        function openState(hours) {
+            if (!hours) return { rank: 2, tone: "unknown", label: "Hours unconfirmed" };
+            if (hours.kind === "always") return { rank: 0, tone: "open", label: "Open 24 hours" };
+            const now = sgNow(), open = toMinutes(hours.open), close = toMinutes(hours.close);
+            if (hours.days.indexOf(now.day) !== -1 && now.minutes >= open && now.minutes < close) {
+                return { rank: 1, tone: "open", label: "Open until " + clock12(close) };
+            }
+            for (let ahead = 0; ahead <= 7; ahead++) {
+                const d = (now.day + ahead) % 7;
+                if (hours.days.indexOf(d) === -1) continue;
+                if (ahead === 0 && now.minutes >= open) continue;
+                if (ahead === 0) return { rank: 3, tone: "closed", label: "Opens " + clock12(open) };
+                if (ahead === 1) return { rank: 3, tone: "closed", label: "Opens tomorrow " + clock12(open) };
+                return { rank: 3, tone: "closed", label: "Opens " + DAY_NAME[d] + " " + clock12(open) };
+            }
+            return { rank: 2, tone: "unknown", label: "Hours unconfirmed" };
+        }
+        function singaporeDateKey() {
+            return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Singapore", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+        }
+
+        /* Deterministic resolve order for the hundred-grid: 37 is coprime with
+           100, so this visits every cell exactly once. There is no RNG anywhere
+           in this file — search for "Math.random" and you will not find it. */
+        const DARK_SET = new Set([3,7,11,19,24,31,38,42,47,55,61,68,73,79,84,90,96]);
+        function resolveOrder(i) { return (i * 37) % 100; }
+
+        /* ================================================================
+         * SHARED UI PRIMITIVES
+         * ================================================================ */
+
+        const Icon = ({ name, size = 24, className = "" }) => {
+            const ref = useRef(null);
+            useEffect(() => {
+                if (ref.current && window.lucide && window.lucide.icons[name]) {
+                    window.lucide.createIcons({ icons: { [name]: window.lucide.icons[name] }, nameAttr: "data-lucide", root: ref.current.parentNode });
+                }
+            }, [name]);
+            return <i ref={ref} data-lucide={name} style={{ width: size, height: size }} className={className}></i>;
+        };
+
+        const PlaceholderChip = () => (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-flag-50 border border-flag-500/30 text-flag-700 text-xs font-medium px-2.5 py-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-flag-500" aria-hidden="true"></span>
+                Demo content — pending clinical review
+            </span>
+        );
+
+        const Citation = ({ text }) => {
+            const [open, setOpen] = useState(false);
+            return (
+                <span className="inline-block align-middle ml-1.5">
+                    <button type="button" onClick={() => setOpen(o => !o)} aria-expanded={open}
+                        className="tap-target inline-flex items-center px-1.5 py-0.5 text-[11px] font-mono rounded border border-gray-300 text-gray-600 hover:border-brand-500 hover:text-brand-600">
+                        source
+                    </button>
+                    {open && <span className="block mt-2 text-xs font-mono leading-relaxed text-gray-600 bg-gray-50 border-l-2 border-brand-400 pl-3 py-2 max-w-sm">{text}</span>}
+                </span>
+            );
+        };
+
+        const Footer = () => (
+            <p className="text-[11px] leading-relaxed text-gray-400 text-center px-6 py-4 border-t border-gray-100">
+                {DISCLAIMER}
+            </p>
+        );
+
+        function Silhouette({ className }) {
+            return (
+                <svg viewBox="0 0 16 22" className={className} aria-hidden="true">
+                    <path fill="currentColor" d="M8 2.4a3.1 3.1 0 1 1 0 6.2 3.1 3.1 0 0 1 0-6.2Zm0 7.6c3.5 0 6.3 2.5 6.3 5.6V20H1.7v-4.4C1.7 12.5 4.5 10 8 10Z" />
+                </svg>
+            );
+        }
+
+        function HundredGrid({ size = "normal" }) {
+            const [lit, setLit] = useState(() => new Set());
+            const [gone, setGone] = useState(() => new Set());
+            const reduceMotion = useMemo(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches, []);
+
+            useEffect(() => {
+                if (reduceMotion) {
+                    const l = new Set(), g = new Set();
+                    for (let i = 0; i < 100; i++) (DARK_SET.has(i) ? g : l).add(i);
+                    setLit(l); setGone(g);
+                    return;
+                }
+                const timers = [];
+                const step = 6000 / 100;
+                for (let i = 0; i < 100; i++) {
+                    timers.push(setTimeout(() => {
+                        if (DARK_SET.has(i)) setGone(prev => new Set(prev).add(i));
+                        else setLit(prev => new Set(prev).add(i));
+                    }, resolveOrder(i) * step));
+                }
+                return () => timers.forEach(clearTimeout);
+            }, [reduceMotion]);
+
+            const cellClass = size === "small" ? "w-full" : "w-full";
+            return (
+                <div className={`grid grid-cols-10 gap-1.5`} role="img"
+                     aria-label="A hundred identical silhouettes resolving. Some go dark. You are never told which one is you.">
+                    {Array.from({ length: 100 }, (_, i) => (
+                        <Silhouette key={i} className={`${cellClass} h-auto transition-opacity duration-500 ${
+                            lit.has(i) ? "opacity-100 text-teal-400" : gone.has(i) ? "opacity-15 text-gray-500" : "opacity-20 text-teal-400"
+                        }`} />
+                    ))}
+                </div>
+            );
+        }
+
+        /* ================================================================
+         * CRISIS SHEET — the only surface both tracks share
+         * ================================================================ */
+
+        function InlineGrounding({ onDone }) {
+            const [i, setI] = useState(0);
+            const step = GROUND_STEPS[i];
+            return (
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                    <p className="text-xs text-gray-500">Step {i + 1} of {GROUND_STEPS.length}</p>
+                    <p className="text-xl font-bold mt-1">{step.n} {step.sense}</p>
+                    <p className="text-sm text-gray-600 mt-1">{step.hint}</p>
+                    <div className="flex gap-2 mt-3">
+                        <button type="button" onClick={() => i === GROUND_STEPS.length - 1 ? onDone() : setI(i + 1)}
+                            className="tap-target flex-1 rounded-lg bg-brand-600 text-white font-semibold px-4 py-2">
+                            {i === GROUND_STEPS.length - 1 ? "Done" : "Next"}
+                        </button>
+                        <button type="button" onClick={onDone} className="tap-target rounded-lg border border-gray-300 px-4 py-2 text-gray-600">Close</button>
+                    </div>
+                </div>
+            );
+        }
+
+        function InlineBreathing({ onDone }) {
+            const [t, setT] = useState(0);
+            useEffect(() => { const id = setInterval(() => setT(v => v + 1), 1000); return () => clearInterval(id); }, []);
+            const phases = BREATH_PATTERNS.box.phases;
+            const cycle = phases.reduce((a, p) => a + p.s, 0);
+            let pos = t % cycle, idx = 0;
+            for (let i = 0; i < phases.length; i++) { if (pos < phases[i].s) { idx = i; break; } pos -= phases[i].s; }
+            const phase = phases[idx];
+            return (
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
+                    <div className="h-28 flex items-center justify-center">
+                        <div className={`rounded-full bg-brand-100 border-2 border-brand-500 transition-transform ease-in-out ${phase.grow ? "w-24 h-24" : "w-11 h-11"}`}
+                             style={{ transitionDuration: `${(phase.s - 0.2) * 1000}ms` }}></div>
+                    </div>
+                    <p className="font-semibold text-lg mt-1">{phase.label} <span className="text-gray-400 font-mono">{phase.s - pos}</span></p>
+                    <button type="button" onClick={onDone} className="tap-target mt-3 w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-600">Close</button>
+                </div>
+            );
+        }
+
+        function CrisisSheet({ open, onClose }) {
+            const [tool, setTool] = useState(null);
+            useEffect(() => { if (!open) setTool(null); }, [open]);
+            useEffect(() => {
+                if (!open) return;
+                const onKey = (e) => { if (e.key === "Escape") onClose(); };
+                document.addEventListener("keydown", onKey);
+                return () => document.removeEventListener("keydown", onKey);
+            }, [open, onClose]);
+            if (!open) return null;
+
+            const sorted = [...CRISIS_RESOURCES].sort((a, b) => openState(a.hours).rank - openState(b.hours).rank);
+            const toneClass = { open: "bg-teal-50 text-teal-700 border-teal-200", closed: "bg-gray-100 text-gray-500 border-gray-200", unknown: "bg-flag-50 text-flag-700 border-flag-200" };
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-end justify-center">
+                    <button aria-label="Close help sheet" onClick={onClose} className="absolute inset-0 bg-black/60"></button>
+                    <div role="dialog" aria-modal="true" aria-label="Get help now"
+                         className="relative w-full max-w-md bg-white rounded-t-2xl shadow-2xl max-h-[90vh] flex flex-col fade-in">
+                        <div className="flex items-start justify-between gap-3 border-b border-gray-100 p-4">
+                            <div>
+                                <h2 className="text-xl font-bold">Get help now</h2>
+                                <p className="text-sm text-gray-500 mt-0.5">Open lines first. Works with no signal.</p>
+                            </div>
+                            <button type="button" onClick={onClose} className="tap-target rounded-lg border border-gray-200 px-3 text-gray-500">
+                                <Icon name="X" size={18} /><span className="sr-only">Close</span>
+                            </button>
+                        </div>
+                        <div className="overflow-y-auto p-4 space-y-4">
+                            {!tool ? (
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button type="button" onClick={() => setTool("ground")} className="tap-target text-left rounded-xl border border-gray-200 p-3 hover:border-brand-400">
+                                        <span className="font-semibold block">Ground me</span>
+                                        <span className="text-xs text-gray-500">5-4-3-2-1</span>
+                                    </button>
+                                    <button type="button" onClick={() => setTool("breathe")} className="tap-target text-left rounded-xl border border-gray-200 p-3 hover:border-brand-400">
+                                        <span className="font-semibold block">Breathe with me</span>
+                                        <span className="text-xs text-gray-500">4-4-4-4</span>
+                                    </button>
+                                </div>
+                            ) : tool === "ground" ? <InlineGrounding onDone={() => setTool(null)} /> : <InlineBreathing onDone={() => setTool(null)} />}
+
+                            <h3 className="text-xs font-mono uppercase tracking-wider text-gray-400 pt-1">Talk to someone</h3>
+                            <div className="space-y-2">
+                                {sorted.map(r => (
+                                    <div key={r.id} className="flex gap-3 rounded-xl border border-gray-200 p-3">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-semibold">{r.name}</p>
+                                            <p className="font-mono font-bold text-brand-600 text-lg tracking-wide">{r.number}</p>
+                                            <p className="text-sm text-gray-500 mt-0.5">{r.blurb}</p>
+                                            <div className="flex flex-wrap gap-1.5 mt-1.5 items-center">
+                                                <span className={`text-xs rounded-full px-2 py-0.5 border ${toneClass[openState(r.hours).tone]}`}>{openState(r.hours).label}</span>
+                                                {r.channel === "whatsapp" && <span className="text-xs rounded-full px-2 py-0.5 border border-gray-200 text-gray-500 bg-gray-50">WhatsApp</span>}
+                                            </div>
+                                            {!r.verified && <p className="text-xs text-flag-700 mt-1.5">Unconfirmed — call may not connect</p>}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <p className="text-xs text-gray-400 leading-relaxed">
+                                Numbers are shown, not dialled — this is a prototype. Nothing about opening this sheet leaves the device.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function CrisisButton({ onOpen }) {
+            return (
+                <button type="button" onClick={onOpen} aria-haspopup="dialog"
+                    className="tap-target fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full bg-alert-500 text-white font-semibold px-5 py-3 shadow-lg hover:bg-alert-400">
+                    <Icon name="PhoneCall" size={18} /> Get help now
+                </button>
+            );
+        }
+
+        /* ================================================================
+         * LANDING / FORK
+         * ================================================================ */
+
+        function LandingScreen({ onSelectTrack }) {
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center bg-white p-6 fade-in">
+                    <div className="w-full max-w-md text-center space-y-8">
+                        <div className="space-y-3">
+                            <div className="inline-block p-4 rounded-full bg-gray-50 mb-2">
+                                <Icon name="Compass" size={40} className="text-gray-800 mx-auto" />
+                            </div>
+                            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">The 10%</h1>
+                            <p className="text-gray-500 text-sm max-w-xs mx-auto">Nobody knows the real number. That's the whole point.</p>
+                        </div>
+
+                        <div className="space-y-3 text-left text-sm text-gray-600 bg-gray-50 rounded-xl p-4">
+                            {ONBOARDING.steps.map((s, i) => (
+                                <div key={i}>
+                                    <p className="font-semibold text-gray-800">{s.title}</p>
+                                    {s.body.map((p, j) => <p key={j} className="mt-0.5">{p}</p>)}
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="space-y-3 pt-2">
+                            <p className="text-sm font-medium text-gray-600">Which one is you, today?</p>
+                            <button onClick={() => onSelectTrack("youth")}
+                                className="tap-target w-full group flex items-center p-5 bg-white border-2 border-brand-100 hover:border-brand-500 rounded-2xl shadow-sm transition-all text-left">
+                                <div className="p-3 bg-brand-100 text-brand-600 rounded-xl mr-4"><Icon name="Lightbulb" size={26} /></div>
+                                <div className="flex-1">
+                                    <h3 className="font-bold text-gray-900">I want to stay informed</h3>
+                                    <p className="text-sm text-gray-500 mt-0.5">Understand what's actually going around, and practise getting out of a moment.</p>
+                                </div>
+                                <Icon name="ChevronRight" size={22} className="text-gray-400 group-hover:text-brand-500" />
+                            </button>
+                            <button onClick={() => onSelectTrack("recovery")}
+                                className="tap-target w-full group flex items-center p-5 bg-white border-2 border-recovery-100 hover:border-recovery-500 rounded-2xl shadow-sm transition-all text-left">
+                                <div className="p-3 bg-recovery-100 text-recovery-600 rounded-xl mr-4"><Icon name="HeartHandshake" size={26} /></div>
+                                <div className="flex-1">
+                                    <h3 className="font-bold text-gray-900">I'm in recovery</h3>
+                                    <p className="text-sm text-gray-500 mt-0.5">Tools for right now — urges, cravings, pressure, and a fast way out.</p>
+                                </div>
+                                <Icon name="ChevronRight" size={22} className="text-gray-400 group-hover:text-recovery-500" />
+                            </button>
+                        </div>
+                    </div>
+                    <Footer />
+                </div>
+            );
+        }
+
+        /* ================================================================
+         * YOUTH TRACK
+         * ================================================================ */
+
+        function RouletteEngine({ onExit }) {
+            // No RNG, no per-player outcome, no replay button anywhere in this
+            // component — constraint 11. `step` is the only state this screen
+            // holds; there is nowhere for a survival flag to live.
+            const [step, setStep] = useState(1);
+            const [resolved, setResolved] = useState(false);
+
+            if (step === 1) {
+                return (
+                    <div className="p-6 max-w-md mx-auto space-y-5 fade-in">
+                        <p className="text-xs font-mono text-gray-400">STEP 1 OF 4</p>
+                        <h2 className="text-2xl font-bold">The void deck</h2>
+                        <PlaceholderChip />
+                        <p className="text-gray-700 leading-relaxed">It's a Tuesday. You're sitting downstairs with people you've known since primary school. One of them holds something out to you — not a stranger, someone whose opinion of you matters.</p>
+                        <p className="text-gray-700 leading-relaxed">He says he's had it before and it's fine. He isn't lying to you. He genuinely doesn't know what's in it, because the person who sold it to him didn't know either.</p>
+                        <div className="space-y-2 pt-2">
+                            <button onClick={() => setStep(2)} className="tap-target w-full rounded-xl bg-gray-900 text-white font-bold py-3">Take it</button>
+                            <button onClick={() => onExit("scripts", "friend")} className="tap-target w-full rounded-xl border-2 border-gray-200 font-semibold py-3">Pass</button>
+                        </div>
+                        <p className="text-xs text-gray-400">Both of these are real choices. Passing doesn't lead to a congratulations screen — it leads to the words you'd actually need.</p>
+                    </div>
+                );
+            }
+
+            if (step === 2) {
+                return (
+                    <div className="p-6 max-w-md mx-auto space-y-5 fade-in">
+                        <p className="text-xs font-mono text-gray-400">STEP 2 OF 4</p>
+                        <h2 className="text-2xl font-bold">A hundred of you</h2>
+                        <p className="text-gray-600">A hundred versions of you, all making this exact choice, on this exact evening.</p>
+                        <div className="bg-gray-900 rounded-2xl p-4">
+                            <HundredGrid />
+                        </div>
+                        {!resolved && (
+                            <button onClick={() => setResolved(true)} className="tap-target w-full rounded-xl border-2 border-gray-200 font-semibold py-3">
+                                (Demo: skip ahead)
+                            </button>
+                        )}
+                        <ResolveWatcher onResolved={() => setResolved(true)} />
+                        {resolved && (
+                            <div className="space-y-4 fade-in">
+                                <p className="font-semibold text-gray-900 text-lg leading-snug">You don't get to know which one you were. Neither did they.</p>
+                                <button onClick={() => setStep(3)} className="tap-target w-full rounded-xl bg-gray-900 text-white font-bold py-3">Continue</button>
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+
+            if (step === 3) {
+                return (
+                    <div className="p-6 max-w-md mx-auto space-y-5 fade-in">
+                        <p className="text-xs font-mono text-gray-400">STEP 3 OF 4</p>
+                        <h2 className="text-2xl font-bold">The honest number</h2>
+                        <PlaceholderChip />
+                        <p className="text-gray-800 leading-relaxed">We called this "The 10%." Here's the truth: nobody knows the number. It isn't 10%. It might be 2%. It might be 30%. It changes batch to batch, because the person who sold it doesn't know what's in it either.</p>
+                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                            <p className="font-semibold text-gray-900">{STAT_ETOMIDATE.claim}<Citation text={STAT_ETOMIDATE.source} /></p>
+                        </div>
+                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                            <p className="font-semibold text-gray-900">{STAT_CLASS_C.claim}<Citation text={STAT_CLASS_C.source} /></p>
+                        </div>
+                        <button onClick={() => setStep(4)} className="tap-target w-full rounded-xl bg-gray-900 text-white font-bold py-3">Continue</button>
+                    </div>
+                );
+            }
+
+            // step 4 — the exit. No replay button by design.
+            return (
+                <div className="p-6 max-w-md mx-auto space-y-5 fade-in">
+                    <p className="text-xs font-mono text-gray-400">STEP 4 OF 4</p>
+                    <h2 className="text-2xl font-bold">So what do you do with that?</h2>
+                    <p className="text-gray-600">There's no replay, no score, and nothing to beat — this ends by handing you something you can use.</p>
+                    <button onClick={() => onExit("scripts", "friend")} className="tap-target w-full text-left rounded-xl border-2 border-gray-200 hover:border-brand-400 p-4">
+                        <span className="font-bold block">What do I say when it's my friend offering?</span>
+                        <span className="text-sm text-gray-500">The words, and the two after them for when one "no" isn't enough.</span>
+                    </button>
+                    <button onClick={() => onExit("someone")} className="tap-target w-full text-left rounded-xl border-2 border-gray-200 hover:border-brand-400 p-4">
+                        <span className="font-bold block">Someone I know is using</span>
+                        <span className="text-sm text-gray-500">What to do, what not to do, and who to call.</span>
+                    </button>
+                    <p className="text-xs text-gray-400">No replay button by design. A mortality module you can re-run becomes a game.</p>
+                </div>
+            );
+        }
+
+        // Fires onResolved once, after the same 6s window HundredGrid uses.
+        function ResolveWatcher({ onResolved }) {
+            useEffect(() => {
+                const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+                const t = setTimeout(onResolved, reduceMotion ? 50 : 6200);
+                return () => clearTimeout(t);
+            }, [onResolved]);
+            return null;
+        }
+
+        function SomeoneUsing({ onBack }) {
+            const items = [
+                ["Don't make it a confrontation.", "Ultimatums usually cost you the one line of contact they still have."],
+                ["Ask, then stop talking.", "“You've seemed off lately — what's going on?” and then let the silence sit."],
+                ["Know the emergency signs.", "Unconscious, not breathing, fitting, or unresponsive is 995 immediately. Don't wait to be sure."],
+                ["You are not their treatment plan.", "Getting them to one phone call is a complete success. The rest isn't yours to carry."],
+            ];
+            return (
+                <ScreenShell title="Someone you know is using" onBack={onBack}>
+                    <PlaceholderChip />
+                    <div className="space-y-3 mt-4">
+                        {items.map(([t, d], i) => (
+                            <div key={i} className="bg-white rounded-xl border border-gray-200 p-4">
+                                <p className="font-bold text-gray-900">{t}</p>
+                                <p className="text-sm text-gray-600 mt-1">{d}</p>
+                            </div>
+                        ))}
+                    </div>
+                </ScreenShell>
+            );
+        }
+
+        function RealityCheck({ onBack }) {
+            const [guess, setGuess] = useState(20);
+            const [revealed, setRevealed] = useState(false);
+            return (
+                <ScreenShell title="Reality check" onBack={onBack}>
+                    <PlaceholderChip />
+                    <p className="text-gray-700 mt-4">{REALITY_CHECK.prompt}</p>
+                    <div className="mt-6">
+                        <input type="range" min="0" max="100" value={guess} onChange={e => setGuess(Number(e.target.value))}
+                            disabled={revealed} className="w-full accent-brand-500" aria-label="Your guess, out of 100" />
+                        <p className="text-center font-mono text-3xl font-bold mt-2">{guess}<span className="text-lg text-gray-400"> / 100</span></p>
+                    </div>
+                    {!revealed ? (
+                        <button onClick={() => setRevealed(true)} className="tap-target w-full mt-6 rounded-xl bg-gray-900 text-white font-bold py-3">See the real figure</button>
+                    ) : (
+                        <div className="mt-6 space-y-3 fade-in">
+                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
+                                <p className="text-sm text-gray-500">Placeholder figure</p>
+                                <p className="font-mono text-3xl font-bold text-gray-900">{REALITY_CHECK.placeholderAnswer} / 100</p>
+                            </div>
+                            <p className="text-xs text-flag-700 bg-flag-50 border border-flag-100 rounded-lg p-3 leading-relaxed">{REALITY_CHECK.note}</p>
+                        </div>
+                    )}
+                </ScreenShell>
+            );
+        }
+
+        function ScenarioPlayer({ onBack }) {
+            const [activeId, setActiveId] = useState(SCENARIOS[0].id);
+            const [chosen, setChosen] = useState(null);
+            const active = SCENARIOS.find(s => s.id === activeId);
+
+            useEffect(() => setChosen(null), [activeId]);
+
+            return (
+                <ScreenShell title="Pressure scenarios" onBack={onBack}>
+                    <p className="text-sm text-gray-500 mt-1">Six moments. Four have nothing to do with drugs — the skill here is getting out of pressure, and that skill travels.</p>
+                    <div className="flex flex-wrap gap-2 mt-4">
+                        {SCENARIOS.map(s => (
+                            <button key={s.id} onClick={() => setActiveId(s.id)}
+                                className={`tap-target rounded-full px-3.5 py-2 text-sm font-medium border ${activeId === s.id ? "border-brand-500 bg-brand-50 text-brand-700" : "border-gray-200 text-gray-600"}`}>
+                                {s.label}{!s.hasDrugs && <span className="ml-1 text-[10px] text-gray-400 font-mono">no drugs</span>}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mt-4">
+                        <p className="text-gray-700 leading-relaxed">{active.setup}</p>
+                    </div>
+                    <p className="text-sm font-semibold text-gray-700 mt-4">Some ways out — none of these is "the" right answer:</p>
+                    <div className="space-y-2 mt-2">
+                        {active.exits.map((ex, i) => (
+                            <button key={i} onClick={() => setChosen(i)}
+                                className={`tap-target w-full text-left rounded-xl border-2 p-4 ${chosen === i ? "border-brand-500 bg-brand-50" : "border-gray-200 hover:border-brand-300"}`}>
+                                <span className="font-semibold block">{ex.label}</span>
+                                {chosen === i && <span className="text-sm text-gray-600 block mt-1.5 fade-in">{ex.note}</span>}
+                            </button>
+                        ))}
+                    </div>
+                    {chosen !== null && (
+                        <p className="text-xs text-gray-400 mt-4">There's no score here and no wrong pick among these. The point was having more than one way out ready before you needed it.</p>
+                    )}
+                </ScreenShell>
+            );
+        }
+
+        function AnonymousQA({ onBack, onCrisisTrigger }) {
+            const [showAsk, setShowAsk] = useState(false);
+            const [draft, setDraft] = useState("");
+            const [showCrisisGate, setShowCrisisGate] = useState(false);
+            const [submitted, setSubmitted] = useState(false);
+
+            const CRISIS_KEYWORDS = ["suicide", "kill myself", "end it", "overdose", "od", "want to die"];
+
+            function handleSubmit() {
+                const lower = draft.toLowerCase();
+                if (CRISIS_KEYWORDS.some(k => lower.includes(k))) {
+                    setShowCrisisGate(true);
+                    return;
+                }
+                setShowAsk(false);
+                setSubmitted(true);
+                setDraft("");
+            }
+
+            return (
+                <ScreenShell title="Anonymous Q&A" onBack={onBack}>
+                    <div className="bg-brand-900 text-white p-4 rounded-xl mt-4 flex items-start gap-3">
+                        <Icon name="Shield" size={22} className="text-brand-300 shrink-0 mt-0.5" />
+                        <div>
+                            <p className="font-bold">Anonymous, not monitored</p>
+                            <p className="text-sm text-brand-100 mt-1">No login, no tracking. Nobody reads this inbox in real time — if you need someone now, use the red button instead.</p>
+                        </div>
+                    </div>
+
+                    <button onClick={() => setShowAsk(true)} className="tap-target w-full mt-4 border-2 border-brand-500 text-brand-600 font-bold rounded-xl py-3 flex items-center justify-center gap-2">
+                        <Icon name="MessageCircleQuestion" size={18} /> Ask a question
+                    </button>
+
+                    {submitted && (
+                        <p className="text-sm text-brand-700 bg-brand-50 border border-brand-100 rounded-lg p-3 mt-3 fade-in">
+                            Sent. Nobody reads this inbox in real time. If you need someone now, call 1767.
+                        </p>
+                    )}
+
+                    <div className="space-y-3 mt-6">
+                        <p className="font-bold text-gray-800">Answered questions</p>
+                        {QA_SEED.map((item, i) => (
+                            <div key={i} className="bg-white p-4 rounded-xl border border-gray-200">
+                                <p className="font-medium text-gray-900">{item.q}</p>
+                                <div className="bg-gray-50 p-3 rounded-lg mt-2">
+                                    <p className="text-xs font-bold text-gray-500 mb-1">Anchor SG editorial team</p>
+                                    <p className="text-sm text-gray-700 leading-relaxed">{item.a}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {showAsk && (
+                        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center fade-in">
+                            <div className="bg-white w-full sm:max-w-md p-6 rounded-t-2xl sm:rounded-2xl">
+                                <h3 className="text-xl font-bold mb-1">Ask anonymously</h3>
+                                <p className="text-sm text-gray-500 mb-4">Nobody reads this inbox in real time. If you need someone now, call 1767 or 995 instead of typing here.</p>
+                                <textarea value={draft} onChange={e => setDraft(e.target.value)}
+                                    className="w-full border-2 border-gray-200 rounded-xl p-3 h-28 outline-none focus:border-brand-500 resize-none mb-4"
+                                    placeholder="Type your question here..." />
+                                <div className="flex gap-3">
+                                    <button onClick={() => setShowAsk(false)} className="tap-target flex-1 py-3 font-bold text-gray-600 bg-gray-100 rounded-xl">Cancel</button>
+                                    <button onClick={handleSubmit} disabled={!draft.trim()} className="tap-target flex-1 py-3 font-bold text-white bg-brand-600 rounded-xl disabled:opacity-40">Submit</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {showCrisisGate && (
+                        <div className="fixed inset-0 bg-alert-600 z-[60] flex flex-col items-center justify-center text-white p-6 text-center fade-in">
+                            <Icon name="AlertTriangle" size={40} />
+                            <h3 className="text-2xl font-bold mt-4">Talk to someone now, not later</h3>
+                            <p className="mt-2 max-w-xs">What you wrote sounds urgent. This inbox isn't monitored in real time — please call one of these instead.</p>
+                            <div className="mt-6 space-y-2 w-full max-w-xs">
+                                <div className="bg-white/10 rounded-xl p-3 font-mono text-lg font-bold">SOS — 1767</div>
+                                <div className="bg-white/10 rounded-xl p-3 font-mono text-lg font-bold">Emergency — 995</div>
+                            </div>
+                            <button onClick={() => { setShowCrisisGate(false); setShowAsk(false); onCrisisTrigger(); }}
+                                className="tap-target mt-6 bg-white text-alert-600 font-bold rounded-xl px-6 py-3">
+                                Open the help sheet
+                            </button>
+                            <button onClick={() => setShowCrisisGate(false)} className="tap-target mt-3 text-white/70 underline text-sm">Go back to editing</button>
+                        </div>
+                    )}
+                </ScreenShell>
+            );
+        }
+
+        function YouthHome({ onBack, onOpenCrisis }) {
+            const [view, setView] = useState("home");
+            const [scriptFilter, setScriptFilter] = useState(null);
+
+            if (view === "roulette") return <RouletteEngine onExit={(dest, filter) => { setScriptFilter(filter || null); setView(dest); }} />;
+            if (view === "someone") return <SomeoneUsing onBack={() => setView("roulette")} />;
+            if (view === "scenarios") return <ScenarioPlayer onBack={() => setView("home")} />;
+            if (view === "reality") return <RealityCheck onBack={() => setView("home")} />;
+            if (view === "qa") return <AnonymousQA onBack={() => setView("home")} onCrisisTrigger={onOpenCrisis} />;
+            if (view === "scripts") return <RefusalScripts onBack={() => setView("home")} contextFilter={scriptFilter} title="When it's your friend" />;
+
+            const tiles = [
+                { id: "roulette", title: "The hundred", note: "One choice, a hundred versions of you. You never learn which one you were.", icon: "Users" },
+                { id: "scenarios", title: "Pressure scenarios", note: "Six moments. Four have no drugs in them at all.", icon: "Gamepad2" },
+                { id: "reality", title: "Reality check", note: "Guess the number, then see how far off the guess usually is.", icon: "Sparkles" },
+                { id: "qa", title: "Anonymous Q&A", note: "Ask anything. Nobody reads it live.", icon: "MessageCircleQuestion" },
+            ];
+
+            return (
+                <div className="min-h-screen bg-gray-50 fade-in pb-24">
+                    <header className="bg-brand-900 text-white pt-10 pb-8 px-6 rounded-b-[2rem]">
+                        <div className="flex justify-between items-center mb-6 max-w-md mx-auto">
+                            <button onClick={onBack} aria-label="Back to start" className="tap-target p-2 bg-white/10 rounded-full hover:bg-white/20"><Icon name="Home" size={20} /></button>
+                            <span className="font-semibold text-sm bg-brand-800 px-3 py-1 rounded-full">Stay informed</span>
+                        </div>
+                        <div className="max-w-md mx-auto">
+                            <h1 className="text-2xl font-bold">Knowledge is power.</h1>
+                            <p className="text-brand-100 text-sm mt-1">Short things, none of them a lecture.</p>
+                        </div>
+                    </header>
+                    <div className="p-6 max-w-md mx-auto space-y-3 -mt-2 relative z-10">
+                        {tiles.map(t => (
+                            <button key={t.id} onClick={() => setView(t.id)}
+                                className="tap-target w-full text-left bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center gap-4 hover:border-brand-300">
+                                <div className="p-3 bg-brand-100 text-brand-600 rounded-xl shrink-0"><Icon name={t.icon} size={24} /></div>
+                                <div className="flex-1">
+                                    <h3 className="font-bold text-gray-900">{t.title}</h3>
+                                    <p className="text-sm text-gray-500 mt-0.5">{t.note}</p>
+                                </div>
+                                <Icon name="ChevronRight" size={20} className="text-gray-300" />
+                            </button>
+                        ))}
+                        <div className="bg-white rounded-2xl border border-gray-100 p-4 opacity-60">
+                            <h3 className="font-bold text-gray-500">Literacy challenge</h3>
+                            <p className="text-sm text-gray-400 mt-0.5">Ten questions, spaced repeat in a week. Coming in the next build.</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        /* ================================================================
+         * RECOVERY TRACK
+         * ================================================================ */
+
+        function ScreenShell({ title, onBack, children }) {
+            return (
+                <div className="min-h-screen bg-gray-50 fade-in pb-24">
+                    <header className="px-4 py-4 border-b border-gray-100 flex items-center bg-white sticky top-0 z-10">
+                        <button onClick={onBack} aria-label="Back" className="tap-target p-2 -ml-2 text-gray-600 rounded-full hover:bg-gray-100"><Icon name="ArrowLeft" size={22} /></button>
+                        <h2 className="ml-2 text-lg font-bold">{title}</h2>
+                    </header>
+                    <div className="p-6 max-w-md mx-auto w-full">{children}</div>
+                </div>
+            );
+        }
+
+        function UrgeSurf({ onBack, onOpenCrisis, onWaveRidden }) {
+            const TOTAL = 900;
+            const [elapsed, setElapsed] = useState(0);
+            const [running, setRunning] = useState(false);
+            const [speed, setSpeed] = useState(60); // demo-speed multiplier, clearly labelled
+            const [done, setDone] = useState(false);
+
+            useEffect(() => {
+                if (!running) return;
+                const id = setInterval(() => {
+                    setElapsed(v => {
+                        const nv = v + speed;
+                        if (nv >= TOTAL) { setRunning(false); setDone(true); onWaveRidden(); return TOTAL; }
+                        return nv;
+                    });
+                }, 1000);
+                return () => clearInterval(id);
+            }, [running, speed]);
+
+            function intensity(p) {
+                const rise = Math.pow(Math.min(p / 0.35, 1), 1.6);
+                const fall = p <= 0.35 ? 1 : Math.pow(1 - (p - 0.35) / 0.65, 1.5);
+                return rise * fall;
+            }
+            const W = 300, H = 100;
+            const path = useMemo(() => {
+                let d = "";
+                for (let i = 0; i <= 100; i++) {
+                    const p = i / 100;
+                    d += (i === 0 ? "M" : "L") + (p * W).toFixed(1) + "," + (H - intensity(p) * (H - 10) - 4).toFixed(1);
+                }
+                return d;
+            }, []);
+            const p = Math.min(elapsed / TOTAL, 1);
+            const dotX = p * W, dotY = H - intensity(p) * (H - 10) - 4;
+            const left = Math.max(TOTAL - elapsed, 0);
+            const prompt = SURF_PROMPTS[Math.floor(elapsed / 45) % SURF_PROMPTS.length];
+
+            function stopEarly() {
+                if (elapsed >= 60) onWaveRidden();
+                setRunning(false);
+                setDone(true);
+            }
+
+            return (
+                <ScreenShell title="Ride the wave" onBack={onBack}>
+                    <PlaceholderChip />
+                    {!done ? (
+                        <>
+                            <p className="text-gray-600 mt-4">Urges behave like waves. They build, they crest, and they come down on their own.</p>
+                            <svg viewBox={`0 0 ${W} ${H}`} className="w-full mt-5" role="img" aria-label="An urge rising to a crest and falling away.">
+                                <path d={`${path} L${W},${H} L0,${H} Z`} fill="rgba(143,79,224,0.10)" />
+                                <path d={path} fill="none" stroke="#8f4fe0" strokeWidth="2.5" strokeLinecap="round" />
+                                <line x1={dotX} y1={dotY} x2={dotX} y2={H} stroke="#c4b5d6" strokeWidth="1" strokeDasharray="3 3" />
+                                <circle cx={dotX} cy={dotY} r="5" fill="#fff" stroke="#8f4fe0" strokeWidth="2.5" />
+                            </svg>
+                            <p className="text-center font-mono text-5xl font-bold mt-4 tabular-nums">{Math.floor(left/60)}:{String(left%60).padStart(2,"0")}</p>
+                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mt-4">
+                                <p className="text-xs font-mono uppercase text-gray-400">Something else to do</p>
+                                <p className="mt-1 text-gray-700">{prompt}</p>
+                            </div>
+                            <div className="flex gap-2 mt-5">
+                                <button onClick={() => setRunning(r => !r)} className="tap-target flex-1 rounded-xl border-2 border-gray-200 font-bold py-3">{running ? "Pause" : elapsed ? "Resume" : "Start riding"}</button>
+                                {elapsed > 0 && <button onClick={stopEarly} className="tap-target flex-1 rounded-xl border-2 border-gray-200 font-bold py-3">I'm done</button>}
+                            </div>
+                            <button onClick={() => setSpeed(s => s === 60 ? 1 : 60)} className="tap-target w-full mt-2 rounded-xl border border-gray-200 text-gray-500 text-sm py-2">
+                                Demo speed: {speed === 60 ? "×60" : "real time"}
+                            </button>
+                            <button onClick={onOpenCrisis} className="tap-target w-full mt-3 rounded-xl bg-alert-500 text-white font-bold py-3">Call someone</button>
+                        </>
+                    ) : (
+                        <div className="fade-in mt-4">
+                            <h3 className="text-xl font-bold">{elapsed >= TOTAL ? "You rode it out" : "That still counts"}</h3>
+                            <p className="text-gray-600 mt-2">{elapsed >= TOTAL
+                                ? "Nothing dramatic happened, which is the point. The urge came, peaked, and came down while you did nothing about it."
+                                : "You don't have to finish the clock for it to have worked. Any time not acting on it is time the wave spent coming down."}</p>
+                            <button onClick={() => { setElapsed(0); setDone(false); }} className="tap-target w-full mt-5 rounded-xl bg-gray-900 text-white font-bold py-3">Ride another one</button>
+                        </div>
+                    )}
+                </ScreenShell>
+            );
+        }
+
+        function Breathing({ onBack }) {
+            const [key, setKey] = useState("box");
+            const [running, setRunning] = useState(false);
+            const [t, setT] = useState(0);
+            useEffect(() => {
+                if (!running) return;
+                const id = setInterval(() => setT(v => v + 1), 1000);
+                return () => clearInterval(id);
+            }, [running]);
+            const pattern = BREATH_PATTERNS[key];
+            const cycle = pattern.phases.reduce((a, p) => a + p.s, 0);
+            let pos = t % cycle, idx = 0;
+            for (let i = 0; i < pattern.phases.length; i++) { if (pos < pattern.phases[i].s) { idx = i; break; } pos -= pattern.phases[i].s; }
+            const phase = pattern.phases[idx];
+
+            return (
+                <ScreenShell title="Breathe" onBack={onBack}>
+                    <PlaceholderChip />
+                    <p className="text-gray-600 mt-4">Two patterns. Neither is better — pick the one that doesn't fight you.</p>
+                    <div className="flex gap-2 mt-4">
+                        {Object.entries(BREATH_PATTERNS).map(([id, p]) => (
+                            <button key={id} onClick={() => { setKey(id); setT(0); setRunning(false); }}
+                                className={`tap-target flex-1 text-left rounded-xl border-2 p-3 ${key === id ? "border-recovery-500 bg-recovery-50" : "border-gray-200"}`}>
+                                <span className="font-bold block">{p.name}</span>
+                            </button>
+                        ))}
+                    </div>
+                    <p className="text-sm text-gray-500 mt-2">{pattern.detail}</p>
+                    <div className="h-48 flex items-center justify-center mt-4">
+                        <div className={`rounded-full bg-recovery-100 border-2 border-recovery-500 transition-transform ease-in-out ${phase.grow ? "w-40 h-40" : "w-16 h-16"}`}
+                             style={{ transitionDuration: `${Math.max(phase.s - 0.2, 0.2) * 1000}ms` }}></div>
+                    </div>
+                    <p className="text-center text-2xl font-bold">{running ? phase.label : "Ready when you are"} {running && <span className="text-gray-400 font-mono">{phase.s - pos}</span>}</p>
+                    <button onClick={() => { setRunning(r => !r); if (!running) setT(0); }} className="tap-target w-full mt-5 rounded-xl bg-recovery-600 text-white font-bold py-3">{running ? "Stop" : "Start"}</button>
+                </ScreenShell>
+            );
+        }
+
+        function Grounding({ onBack }) {
+            const [i, setI] = useState(0);
+            const step = GROUND_STEPS[i];
+            return (
+                <ScreenShell title="5-4-3-2-1" onBack={onBack}>
+                    <PlaceholderChip />
+                    {i < GROUND_STEPS.length ? (
+                        <>
+                            <p className="text-gray-600 mt-4">Five senses, counting down.</p>
+                            <p className="text-sm text-gray-400 mt-6">Step {i + 1} of {GROUND_STEPS.length}</p>
+                            <h3 className="text-3xl font-bold mt-1">{step.n} {step.sense}</h3>
+                            <p className="text-gray-600 mt-2">{step.hint}</p>
+                            <button onClick={() => setI(i + 1)} className="tap-target w-full mt-6 rounded-xl bg-recovery-600 text-white font-bold py-3">{i === GROUND_STEPS.length - 1 ? "Finish" : "Next"}</button>
+                        </>
+                    ) : (
+                        <div className="fade-in mt-4">
+                            <h3 className="text-xl font-bold">That's the whole thing</h3>
+                            <p className="text-gray-600 mt-2">Run it again from the top as many times as you want. Nothing here is counting.</p>
+                            <button onClick={() => setI(0)} className="tap-target w-full mt-5 rounded-xl bg-gray-900 text-white font-bold py-3">Run it again</button>
+                        </div>
+                    )}
+                </ScreenShell>
+            );
+        }
+
+        function RefusalScripts({ onBack, contextFilter, title }) {
+            const pool = contextFilter ? REFUSAL_CONTEXTS.filter(c => c.id === contextFilter) : REFUSAL_CONTEXTS;
+            const [ctxId, setCtxId] = useState(pool[0].id);
+            const [tone, setTone] = useState("flat");
+            const ctx = pool.find(c => c.id === ctxId) || pool[0];
+            const [copiedIdx, setCopiedIdx] = useState(null);
+
+            function copy(line, i) {
+                try { navigator.clipboard.writeText(line); } catch (e) {}
+                setCopiedIdx(i);
+                setTimeout(() => setCopiedIdx(null), 1400);
+            }
+
+            return (
+                <ScreenShell title={title || "Refusal scripts"} onBack={onBack}>
+                    <PlaceholderChip />
+                    <p className="text-gray-600 mt-4">One "no" rarely ends it — each line comes with the next two.</p>
+                    {pool.length > 1 && (
+                        <div className="flex flex-wrap gap-2 mt-4">
+                            {pool.map(c => (
+                                <button key={c.id} onClick={() => setCtxId(c.id)}
+                                    className={`tap-target rounded-full px-3.5 py-2 text-sm font-medium border ${ctxId === c.id ? "border-recovery-500 bg-recovery-50 text-recovery-700" : "border-gray-200 text-gray-600"}`}>
+                                    {c.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                    <p className="text-sm text-gray-500 mt-3">{ctx.blurb}</p>
+                    <div className="flex gap-2 mt-4">
+                        {["light", "flat", "firm"].map(tn => (
+                            <button key={tn} onClick={() => setTone(tn)}
+                                className={`tap-target flex-1 rounded-xl border-2 py-2.5 font-semibold capitalize ${tone === tn ? "border-recovery-500 bg-recovery-50" : "border-gray-200"}`}>
+                                {tn}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="space-y-2 mt-4">
+                        {ctx.tones[tone].map((line, i) => (
+                            <div key={i} className="bg-white rounded-xl border border-gray-200 p-4">
+                                <p className="text-xs font-mono uppercase tracking-wide text-gray-400">{i+1}. {LADDER_LABELS[i]}</p>
+                                <p className="text-lg mt-1.5">&ldquo;{line}&rdquo;</p>
+                                <button onClick={() => copy(line, i)} className="tap-target mt-2 text-sm font-medium border border-gray-200 rounded-lg px-3 py-1.5 text-gray-600">
+                                    {copiedIdx === i ? "Copied" : "Copy"}
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-4">The third line is an exit, not an argument. You're allowed to use it first.</p>
+                </ScreenShell>
+            );
+        }
+
+        function FakeCall({ onBack }) {
+            const [caller, setCaller] = useState("Mum");
+            const [delay, setDelay] = useState(5);
+            const [state, setState] = useState("setup"); // setup | armed | ringing | answered
+            const [countdown, setCountdown] = useState(0);
+            const [callSecs, setCallSecs] = useState(0);
+
+            useEffect(() => {
+                if (state !== "armed") return;
+                if (countdown <= 0) { setState("ringing"); try { navigator.vibrate && navigator.vibrate([400,200,400]); } catch(e){} return; }
+                const id = setTimeout(() => setCountdown(c => c - 1), 1000);
+                return () => clearTimeout(id);
+            }, [state, countdown]);
+
+            useEffect(() => {
+                if (state !== "answered") return;
+                const id = setInterval(() => setCallSecs(s => s + 1), 1000);
+                return () => clearInterval(id);
+            }, [state]);
+
+            if (state === "ringing" || state === "answered") {
+                return (
+                    <div className="fixed inset-0 z-[60] bg-gray-900 text-white flex flex-col items-center justify-between py-16 px-6">
+                        <div className="flex flex-col items-center">
+                            <p className="text-xs font-mono tracking-widest text-gray-400">{state === "answered" ? "CALL IN PROGRESS" : "INCOMING CALL"}</p>
+                            <div className="w-28 h-28 rounded-full bg-gray-800 flex items-center justify-center text-4xl font-bold mt-6">{caller.charAt(0).toUpperCase()}</div>
+                            <h1 className="text-3xl font-semibold mt-5">{caller}</h1>
+                            <p className="text-gray-400 font-mono mt-1">{state === "answered" ? `${Math.floor(callSecs/60)}:${String(callSecs%60).padStart(2,"0")}` : "mobile"}</p>
+                        </div>
+                        <p className="text-center max-w-xs text-sm text-gray-300">{state === "answered" ? "Nobody is on the line. Say the words you need to say and walk." : "“Sorry — I have to take this. I'll message you.”"}</p>
+                        <div className="flex gap-12">
+                            {state === "ringing" && (
+                                <button onClick={() => setState("setup")} aria-label="Decline call" className="tap-target w-16 h-16 rounded-full bg-alert-500 text-2xl">✕</button>
+                            )}
+                            {state === "ringing" ? (
+                                <button onClick={() => setState("answered")} aria-label="Answer call" className="tap-target w-16 h-16 rounded-full bg-recovery-500 text-2xl">✆</button>
+                            ) : (
+                                <button onClick={() => setState("setup")} aria-label="End call" className="tap-target w-16 h-16 rounded-full bg-alert-500 text-2xl">✕</button>
+                            )}
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <ScreenShell title="Fake call" onBack={onBack}>
+                    <PlaceholderChip />
+                    <p className="text-gray-600 mt-4">Set it up now, and in a moment your phone rings with a reason to walk out.</p>
+                    {state === "armed" ? (
+                        <div className="text-center mt-8">
+                            <p className="font-mono text-6xl font-bold">{countdown}s</p>
+                            <p className="text-gray-500 mt-3">{caller} will call. Put your phone away.</p>
+                            <button onClick={() => setState("setup")} className="tap-target w-full mt-6 rounded-xl border-2 border-gray-200 font-bold py-3">Cancel</button>
+                        </div>
+                    ) : (
+                        <>
+                            <p className="text-xs font-mono uppercase text-gray-400 mt-5">Who's calling</p>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                                {["Mum","Dad","Home","Boss","Sis"].map(n => (
+                                    <button key={n} onClick={() => setCaller(n)} className={`tap-target rounded-full px-4 py-2 text-sm font-medium border ${caller === n ? "border-recovery-500 bg-recovery-50" : "border-gray-200 text-gray-600"}`}>{n}</button>
+                                ))}
+                            </div>
+                            <p className="text-xs font-mono uppercase text-gray-400 mt-5">Ring in</p>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                                {[5,15,30].map(s => (
+                                    <button key={s} onClick={() => setDelay(s)} className={`tap-target rounded-full px-4 py-2 text-sm font-medium border ${delay === s ? "border-recovery-500 bg-recovery-50" : "border-gray-200 text-gray-600"}`}>{s}s</button>
+                                ))}
+                            </div>
+                            <button onClick={() => { setCountdown(delay); setState("armed"); }} className="tap-target w-full mt-6 rounded-xl bg-recovery-600 text-white font-bold py-3">Set it up</button>
+                            <p className="text-xs text-gray-400 mt-4 leading-relaxed">This makes no sound — it vibrates instead, where supported. A phone that stays silent is easier to explain than one that rings at the wrong moment.</p>
+                        </>
+                    )}
+                </ScreenShell>
+            );
+        }
+
+        function ZoneGuard({ onBack, onOpenCrisis, sponsor }) {
+            const [zones, setZones] = useState([]);
+            const [alertOn, setAlertOn] = useState(false);
+            const gridRef = useRef(null);
+
+            function placeZone(e) {
+                const rect = gridRef.current.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width;
+                const y = (e.clientY - rect.top) / rect.height;
+                setZones(z => [...z, { id: Date.now(), x, y }]);
+            }
+
+            return (
+                <ScreenShell title="Trigger zone guard" onBack={onBack}>
+                    <PlaceholderChip />
+                    <p className="text-gray-600 mt-4">Tap the map to mark a place you'd rather avoid. This is a drawing, not GPS — the app never reads your real location or asks for location permission.</p>
+                    <div ref={gridRef} onClick={placeZone}
+                        className="relative mt-4 rounded-xl border border-gray-300 bg-gray-100 aspect-square cursor-crosshair overflow-hidden"
+                        style={{ backgroundImage: "linear-gradient(#d8dce1 1px, transparent 1px), linear-gradient(90deg, #d8dce1 1px, transparent 1px)", backgroundSize: "12.5% 12.5%" }}>
+                        {zones.map(z => (
+                            <div key={z.id} className="absolute w-10 h-10 -ml-5 -mt-5 rounded-full bg-alert-500/20 border-2 border-alert-500 flex items-center justify-center"
+                                 style={{ left: `${z.x * 100}%`, top: `${z.y * 100}%` }}>
+                                <Icon name="MapPin" size={16} className="text-alert-600" />
+                            </div>
+                        ))}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2">Illustrative grid, not a real map. {zones.length} zone{zones.length === 1 ? "" : "s"} placed.</p>
+                    <button disabled={!zones.length} onClick={() => setAlertOn(true)} className="tap-target w-full mt-5 rounded-xl bg-gray-900 text-white font-bold py-3 disabled:opacity-40">Simulate approach</button>
+
+                    {alertOn && (
+                        <div className="fixed inset-0 z-[60] bg-white flex flex-col justify-center p-6 fade-in">
+                            <div className="max-w-sm mx-auto text-center space-y-4">
+                                <Icon name="MapPin" size={36} className="text-alert-500 mx-auto" />
+                                <h3 className="text-xl font-bold">You're near a zone you marked</h3>
+                                <p className="text-gray-600">This is only a simulation of that moment — nothing about your real location triggered this.</p>
+                                <div className="space-y-2 pt-2">
+                                    <button onClick={() => setAlertOn(false)} className="tap-target w-full rounded-xl bg-recovery-600 text-white font-bold py-3">Breathe for a minute</button>
+                                    <button onClick={onOpenCrisis} className="tap-target w-full rounded-xl border-2 border-gray-200 font-bold py-3">{sponsor ? `Call ${sponsor.name}` : "Call someone"}</button>
+                                    <button onClick={() => setAlertOn(false)} className="tap-target w-full rounded-xl border-2 border-gray-200 font-bold py-3">I'm here on purpose</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </ScreenShell>
+            );
+        }
+
+        function SponsorSetup({ onBack, sponsor, onSave }) {
+            const [name, setName] = useState(sponsor?.name || "");
+            const [number, setNumber] = useState(sponsor?.number || "");
+            return (
+                <ScreenShell title="Sponsor" onBack={onBack}>
+                    <PlaceholderChip />
+                    <p className="text-gray-600 mt-4">One name, one number, stored on this device only.</p>
+                    <p className="text-sm text-flag-700 bg-flag-50 border border-flag-100 rounded-lg p-3 mt-3">{SPONSOR_NOTE}</p>
+                    <label className="block mt-5 text-sm font-semibold text-gray-700" htmlFor="sponsor-name">Name</label>
+                    <input id="sponsor-name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. David"
+                        className="tap-target w-full mt-1.5 rounded-xl border-2 border-gray-200 px-4 py-3 outline-none focus:border-recovery-500" />
+                    <label className="block mt-4 text-sm font-semibold text-gray-700" htmlFor="sponsor-number">Number</label>
+                    <input id="sponsor-number" value={number} onChange={e => setNumber(e.target.value)} placeholder="e.g. 9123 4567"
+                        className="tap-target w-full mt-1.5 rounded-xl border-2 border-gray-200 px-4 py-3 outline-none focus:border-recovery-500" />
+                    <button onClick={() => onSave({ name: name.trim(), number: number.trim() })} disabled={!name.trim() || !number.trim()}
+                        className="tap-target w-full mt-6 rounded-xl bg-recovery-600 text-white font-bold py-3 disabled:opacity-40">Save</button>
+                    {sponsor && <p className="text-sm text-gray-500 mt-3 text-center">Saved: {sponsor.name}, {sponsor.number}</p>}
+                </ScreenShell>
+            );
+        }
+
+        function SupportCircles({ onBack }) {
+            return (
+                <ScreenShell title="Support circles" onBack={onBack}>
+                    <p className="text-gray-600 mt-4">Meeting directory. Times change — call ahead, and use these mainly to find the organiser's current listing.</p>
+                    <div className="space-y-2 mt-4">
+                        {SUPPORT_CIRCLES.map((c, i) => (
+                            <a key={i} href={c.link} target="_blank" rel="noreferrer" className="tap-target block rounded-xl border border-gray-200 p-4 hover:border-recovery-300">
+                                <p className="font-bold text-gray-900">{c.name}</p>
+                                <p className="text-sm text-gray-500 mt-0.5">{c.area} · Last checked {c.lastChecked}</p>
+                                <p className="text-xs text-recovery-600 mt-1.5 flex items-center gap-1">{c.link.replace("https://","")} <Icon name="ExternalLink" size={12} /></p>
+                            </a>
+                        ))}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-4">Times change — call ahead.</p>
+                </ScreenShell>
+            );
+        }
+
+        function WorkTraining({ onBack }) {
+            return (
+                <ScreenShell title="Work & training" onBack={onBack}>
+                    <p className="text-gray-600 mt-4">Deep links only — no employer list, no salary figures. A static list goes stale and creates its own liability.</p>
+                    <div className="space-y-2 mt-4">
+                        {WORK_LINKS.map((l, i) => (
+                            <a key={i} href={l.href} target="_blank" rel="noreferrer" className="tap-target block rounded-xl border border-gray-200 p-4 hover:border-recovery-300">
+                                <p className="font-bold text-gray-900 flex items-center gap-1.5">{l.name} <Icon name="ExternalLink" size={14} className="text-gray-400" /></p>
+                                <p className="text-sm text-gray-500 mt-0.5">{l.detail}</p>
+                            </a>
+                        ))}
+                    </div>
+                </ScreenShell>
+            );
+        }
+
+        function RecoveryHome({ onBack, onOpenCrisis }) {
+            const [view, setView] = useState("home");
+            const [wavesRidden, setWavesRidden] = useState(() => {
+                try { return JSON.parse(localStorage.getItem("tenpercent-demo-waves") || "0"); } catch (e) { return 0; }
+            });
+            const [sponsor, setSponsor] = useState(() => {
+                try { return JSON.parse(localStorage.getItem("tenpercent-demo-sponsor") || "null"); } catch (e) { return null; }
+            });
+
+            function recordWave() {
+                setWavesRidden(v => { const nv = v + 1; try { localStorage.setItem("tenpercent-demo-waves", JSON.stringify(nv)); } catch(e){} return nv; });
+            }
+            function saveSponsor(s) {
+                setSponsor(s);
+                try { localStorage.setItem("tenpercent-demo-sponsor", JSON.stringify(s)); } catch(e){}
+                setView("home");
+            }
+
+            if (view === "surf") return <UrgeSurf onBack={() => setView("home")} onOpenCrisis={onOpenCrisis} onWaveRidden={recordWave} />;
+            if (view === "breathe") return <Breathing onBack={() => setView("home")} />;
+            if (view === "grounding") return <Grounding onBack={() => setView("home")} />;
+            if (view === "scripts") return <RefusalScripts onBack={() => setView("home")} />;
+            if (view === "fakecall") return <FakeCall onBack={() => setView("home")} />;
+            if (view === "zoneguard") return <ZoneGuard onBack={() => setView("home")} onOpenCrisis={onOpenCrisis} sponsor={sponsor} />;
+            if (view === "sponsor") return <SponsorSetup onBack={() => setView("home")} sponsor={sponsor} onSave={saveSponsor} />;
+            if (view === "circles") return <SupportCircles onBack={() => setView("home")} />;
+            if (view === "work") return <WorkTraining onBack={() => setView("home")} />;
+
+            const tiles = [
+                { id: "surf", title: "Ride the wave", note: "Fifteen minutes. It comes down on its own.", icon: "Waves" },
+                { id: "breathe", title: "Breathe", note: "Box breathing, or a physiological sigh.", icon: "Wind" },
+                { id: "grounding", title: "Grounding", note: "5-4-3-2-1, one sense at a time.", icon: "Eye" },
+                { id: "scripts", title: "Refusal scripts", note: "Words for when one \"no\" isn't enough.", icon: "MessageSquare" },
+                { id: "fakecall", title: "Fake call", note: "A reason to walk out of a room.", icon: "PhoneCall" },
+                { id: "zoneguard", title: "Trigger zone guard", note: "Simulated only — never your real location.", icon: "MapPin" },
+                { id: "sponsor", title: "Sponsor", note: sponsor ? `Saved: ${sponsor.name}` : "One number, stored on this phone.", icon: "UserCheck" },
+                { id: "circles", title: "Support circles", note: "A meeting directory, kept current by linking out.", icon: "Users" },
+                { id: "work", title: "Work & training", note: "MyCareersFuture and WSG — nothing else.", icon: "Briefcase" },
+            ];
+
+            return (
+                <div className="min-h-screen bg-gray-50 fade-in pb-24">
+                    <header className="bg-recovery-900 text-white pt-10 pb-10 px-6 rounded-b-[2rem] relative overflow-hidden">
+                        <div className="flex justify-between items-center mb-6 max-w-md mx-auto relative z-10">
+                            <button onClick={onBack} aria-label="Back to start" className="tap-target p-2 bg-white/10 rounded-full hover:bg-white/20"><Icon name="Home" size={20} /></button>
+                            <span className="font-semibold text-sm bg-recovery-800 px-3 py-1 rounded-full border border-recovery-700">Recovery</span>
+                        </div>
+                        <div className="max-w-md mx-auto relative z-10">
+                            <h1 className="text-2xl font-bold">You're here.</h1>
+                            <p className="text-recovery-100 text-sm mt-1">Whatever today is, this is the right place to be.</p>
+                            {wavesRidden > 0 && <p className="text-recovery-100 text-sm mt-3 font-mono">Waves ridden: {wavesRidden}</p>}
+                        </div>
+                    </header>
+                    <div className="p-6 max-w-md mx-auto space-y-3 -mt-2 relative z-10">
+                        {tiles.map(t => (
+                            <button key={t.id} onClick={() => setView(t.id)}
+                                className="tap-target w-full text-left bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center gap-4 hover:border-recovery-300">
+                                <div className="p-3 bg-recovery-100 text-recovery-600 rounded-xl shrink-0"><Icon name={t.icon} size={22} /></div>
+                                <div className="flex-1">
+                                    <h3 className="font-bold text-gray-900">{t.title}</h3>
+                                    <p className="text-sm text-gray-500 mt-0.5">{t.note}</p>
+                                </div>
+                                <Icon name="ChevronRight" size={20} className="text-gray-300" />
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        /* ================================================================
+         * ROOT — the hard fork. Tracks never cross-link; the crisis sheet is
+         * the only shared surface, rendered here outside both trees.
+         * ================================================================ */
+
+        function App() {
+            const [track, setTrack] = useState(null); // null | "youth" | "recovery"
+            const [crisisOpen, setCrisisOpen] = useState(false);
+            const openCrisis = useCallback(() => setCrisisOpen(true), []);
+
+            return (
+                <div className="max-w-md mx-auto bg-white min-h-screen shadow-xl relative">
+                    {track === null && <LandingScreen onSelectTrack={setTrack} />}
+                    {track === "youth" && <YouthHome onBack={() => setTrack(null)} onOpenCrisis={openCrisis} />}
+                    {track === "recovery" && <RecoveryHome onBack={() => setTrack(null)} onOpenCrisis={openCrisis} />}
+                    <CrisisButton onOpen={openCrisis} />
+                    <CrisisSheet open={crisisOpen} onClose={() => setCrisisOpen(false)} />
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById("root"));
+        root.render(<App />);
+    </script>
+</body>
+</html>

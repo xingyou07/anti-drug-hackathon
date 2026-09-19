@@ -1,0 +1,102 @@
+{
+  "status": "UNREVIEWED_PLACEHOLDER",
+  "reviewedBy": null,
+  "reviewedOn": null,
+  "todo": "Scripts need review by someone with lived-experience input. Deliberately substance-agnostic: no line names a substance, so the same line works whatever is being offered and nothing here reads as a description of a drug.",
+  "toneLabels": { "light": "Light", "flat": "Flat", "firm": "Firm" },
+  "ladderLabels": [
+    "First time they ask",
+    "They push",
+    "They push again — this is your exit"
+  ],
+  "contexts": [
+    {
+      "id": "friend",
+      "label": "A friend you trust",
+      "blurb": "Not a stranger. Someone whose opinion of you actually matters.",
+      "tags": ["peer-pressure"],
+      "tones": {
+        "light": ["I'm good — but pass it on, don't waste it on me.", "Ha, still good. You can stop checking.", "I'm gonna go get a drink. Come find me after."],
+        "flat": ["No thanks.", "Still no. It's not a mood thing.", "I'm gonna head off. Text me tomorrow."],
+        "firm": ["No. I'd rather you didn't offer me that.", "I've said no. I don't want to say it a third time.", "I'm going to go. This doesn't change anything between us, but I'm going."]
+      }
+    },
+    {
+      "id": "nightlife",
+      "label": "Nightlife",
+      "blurb": "A club, a bar, someone's place after.",
+      "tags": ["peer-pressure"],
+      "tones": {
+        "light": ["I'm good, seriously.", "Still good. Ask me again next year.", "I'm gonna go find water. Catch you later."],
+        "flat": ["No thanks.", "I said no.", "I'm heading off. See you."],
+        "firm": ["Not for me. Don't offer again.", "I've told you once. Drop it.", "I'm leaving. This isn't a discussion."]
+      }
+    },
+    {
+      "id": "ns-bunk",
+      "label": "NS bunk",
+      "blurb": "You can't leave, and you'll see these people tomorrow.",
+      "tags": [],
+      "tones": {
+        "light": ["Nah, I've got enough problems already.", "Still got those problems. Still passing.", "I'm gonna go take a walk. Back later."],
+        "flat": ["Not interested.", "Still not interested.", "I'm going back to my bunk."],
+        "firm": ["No. And keep it away from me.", "I already said no. That's the last time.", "Don't involve me in this. I'm going."]
+      }
+    },
+    {
+      "id": "hall",
+      "label": "Hall or uni",
+      "blurb": "Your room is thirty seconds away, which is your advantage.",
+      "tags": ["peer-pressure"],
+      "tones": {
+        "light": ["I'm out — got a 9am.", "Still out. The 9am hasn't moved.", "Right, I'm heading up. Night."],
+        "flat": ["No thanks, not my thing.", "Still no.", "I'm going back to my room."],
+        "firm": ["No. I don't want to be asked again.", "That's twice. Stop.", "I'm leaving now."]
+      }
+    },
+    {
+      "id": "overseas",
+      "label": "Overseas trip",
+      "blurb": "Different rules, same you. Getting home matters more than the night.",
+      "tags": ["peer-pressure"],
+      "tones": {
+        "light": ["Nah, I'm the boring one this trip.", "Still boring. Proudly.", "I'm heading back to the hotel — you go on."],
+        "flat": ["No, I'm not doing that here.", "Still no.", "I'll see you tomorrow. I'm going back."],
+        "firm": ["No. Not here, not anywhere.", "I've said no twice now.", "I'm getting my own way back. Don't follow me."]
+      }
+    },
+    {
+      "id": "workplace",
+      "label": "Workplace",
+      "blurb": "Where saying no has to survive Monday morning.",
+      "tags": [],
+      "tones": {
+        "light": ["I'll pass — but get me a coffee?", "Still passing. Coffee offer stands.", "I'm gonna head back to my desk."],
+        "flat": ["No thanks.", "I'd rather not, thanks.", "I'm heading off — early start tomorrow."],
+        "firm": ["No. Please don't ask me at work.", "I've asked you to drop it.", "If this comes up again I'll take it further."]
+      }
+    },
+    {
+      "id": "family",
+      "label": "Family gathering",
+      "blurb": "The hardest room to leave, and the one you can't stop being in.",
+      "tags": [],
+      "tones": {
+        "light": ["Aiyah, not for me lah.", "Still not for me. Don't waste it.", "I'm gonna go help in the kitchen."],
+        "flat": ["No, thank you.", "I'm still going to say no.", "I'm stepping out for some air."],
+        "firm": ["No. I'd rather not explain why.", "I've said no. Please respect that.", "I'm going to head off. I'll call you tomorrow."]
+      }
+    },
+    {
+      "id": "exam-crunch",
+      "label": "Exam crunch",
+      "blurb": "When someone offers you a shortcut and you're tired enough to consider it.",
+      "tags": ["peer-pressure"],
+      "tones": {
+        "light": ["Nah, I'd rather just be tired.", "Still rather be tired. It's going great.", "I'm gonna go sleep for real. Night."],
+        "flat": ["No, I'm not doing that.", "Still no.", "I'm going home to sleep."],
+        "firm": ["No. I'm not putting my exams on it.", "I've said no. Don't offer again.", "I'm leaving the library. See you after."]
+      }
+    }
+  ]
+}

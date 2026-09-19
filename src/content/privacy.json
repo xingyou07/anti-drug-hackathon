@@ -1,0 +1,34 @@
+{
+  "status": "UNREVIEWED_PLACEHOLDER",
+  "reviewedBy": null,
+  "reviewedOn": null,
+  "todo": "Plain-English privacy copy should be confirmed by a legal partner before real use, even though the technical claims below are enforced in code.",
+  "title": "What this app knows about you",
+  "summary": "Nothing leaves your phone. There is no server to send it to.",
+  "sections": [
+    {
+      "heading": "There is no account",
+      "body": "No name, no email, no phone number, no login. The app never asks who you are, and there is nowhere for it to store an answer."
+    },
+    {
+      "heading": "The app never goes online",
+      "body": "After you install it, it makes no network requests at all. No analytics, no crash reporting, no advertising, no fonts loaded from somewhere else. You can put your phone in airplane mode and every tool in here still works."
+    },
+    {
+      "heading": "Your location is never read",
+      "body": "The Trigger Zone feature is a simulation. The app does not ask for location permission and does not use your phone's GPS. The zones you draw are pictures on a map graphic, stored on this device, and they never leave it."
+    },
+    {
+      "heading": "What is stored on this device",
+      "body": "Which track you chose, your settings, the count of waves you've ridden, a sponsor name and number if you entered one, and your simulated zones. It lives in this browser's local storage on this phone only. It is not encrypted, so anyone who can unlock your phone can read it."
+    },
+    {
+      "heading": "How to erase all of it",
+      "body": "Settings has a 'Delete everything' button. It clears the lot instantly, and there is no copy anywhere else to recover it from."
+    },
+    {
+      "heading": "Calling a helpline is not private to this app",
+      "body": "When you tap a number, your phone makes the call, not the app. The app does not see or record that you called. Your phone and your telco handle it the way they handle any other call."
+    }
+  ]
+}

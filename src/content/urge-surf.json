@@ -1,0 +1,34 @@
+{
+  "status": "UNREVIEWED_PLACEHOLDER",
+  "reviewedBy": null,
+  "reviewedOn": null,
+  "todo": "Urge surfing is an established relapse-prevention technique, but this framing, the 15-minute default and the wording of the completion copy have not been reviewed by a clinician. The curve shape in particular must not be read as a claim about how long an urge lasts.",
+  "durationSeconds": 900,
+  "curveNote": "The curve is a drawing of the rise-and-fall shape this technique teaches. It is not a measurement, not an average, and not a prediction about your urge.",
+  "title": "Ride the wave",
+  "lede": "Urges behave like waves. They build, they crest, and they come down on their own. You don't have to do anything to make that happen except not act on it.",
+  "startLabel": "Start riding",
+  "prompts": [
+    "Where is it in your body? Chest, stomach, jaw, hands. Just locate it.",
+    "Name five things you can see that are the same colour.",
+    "Put your hands under cold water. Notice the exact second it stops feeling cold.",
+    "Count backwards from 100 in sevens. Start over if you lose it.",
+    "Stand up. Walk to a different room. Sit somewhere you weren't sitting.",
+    "Describe this room out loud like you're describing it to someone on the phone.",
+    "Unclench your jaw. Drop your shoulders. Notice you'd been holding both.",
+    "Is it going up, down, or holding? You don't have to change it. Just check.",
+    "Text someone something completely unrelated. A meme counts.",
+    "Name every street you'd pass walking home from here.",
+    "Push both palms together hard for ten seconds. Then let go.",
+    "You've been here nine minutes. The wave has already changed shape at least once."
+  ],
+  "completion": {
+    "title": "You rode it out",
+    "body": "Nothing dramatic happened, which is the point. The urge came, it peaked, and it went down while you did nothing about it. That's the skill. It gets easier to trust the more times you watch it happen.",
+    "counterLabel": "Waves ridden"
+  },
+  "earlyStop": {
+    "title": "That still counts",
+    "body": "You don't have to finish the clock for it to have worked. Any time spent not acting on it is time the wave spent coming down."
+  }
+}

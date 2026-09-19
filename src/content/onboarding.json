@@ -1,0 +1,44 @@
+{
+  "status": "UNREVIEWED_PLACEHOLDER",
+  "reviewedBy": null,
+  "reviewedOn": null,
+  "todo": "All onboarding copy must be read by a clinical partner before real use. The framing of the track fork in particular decides who self-identifies as 'in recovery', and getting the wording wrong pushes people into the wrong track.",
+  "steps": [
+    {
+      "id": "what-this-is",
+      "title": "What this is",
+      "body": [
+        "This app is about one thing: the odds you cannot see.",
+        "It holds a handful of tools that work with no signal, no account and no internet, and a list of Singapore helplines that are one tap away from every screen."
+      ]
+    },
+    {
+      "id": "what-this-isnt",
+      "title": "What this isn't",
+      "body": [
+        "It is not medical advice, not counselling, and not a substitute for a person.",
+        "It is not run by, checked by, or connected to any government agency or charity.",
+        "Nobody is on the other end of this app. If you need someone right now, use the red button. It works offline, from any screen."
+      ]
+    },
+    {
+      "id": "choose-track",
+      "title": "Which one is you, today?",
+      "body": [
+        "These are two different apps with two different jobs. Pick the one that fits. You can switch later in Settings."
+      ],
+      "options": [
+        {
+          "track": "youth",
+          "label": "I want to stay informed",
+          "detail": "Understand what's actually going around, and practise getting out of a moment you don't want to be in."
+        },
+        {
+          "track": "recovery",
+          "label": "I'm in recovery",
+          "detail": "Tools for right now — urges, cravings, pressure, and a fast way out of a room."
+        }
+      ]
+    }
+  ]
+}
